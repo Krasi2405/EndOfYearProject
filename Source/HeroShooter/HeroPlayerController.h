@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "HeroPlayerController.generated.h"
 
+class UIngameMenu;
+
 /**
  * 
  */
@@ -13,5 +15,23 @@ UCLASS()
 class HEROSHOOTER_API AHeroPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+protected:
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UIngameMenu> IngameMenuClass;
+
+	UPROPERTY()
+	UIngameMenu* IngameMenu;
+
+	virtual void SetupInputComponent() override;
+
+	void SwitchIngameMenu();
+
+	void DeactivateIngameMenu();
+
+	void ActivateIngameMenu();
+
+	bool bIngameMenuActive = false;
 	
 };
