@@ -6,6 +6,11 @@
 
 #include "CustomMacros.h"
 
+AHeroPlayerController::AHeroPlayerController() {
+	SetReplicatingMovement(true); // Needed so linetrace works on server.
+}
+
+
 void AHeroPlayerController::SetupInputComponent() {
 	Super::SetupInputComponent();
 
@@ -14,10 +19,10 @@ void AHeroPlayerController::SetupInputComponent() {
 	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
 }
 
+
 void AHeroPlayerController::SwitchIngameMenu() {
 	bIngameMenuActive ? DeactivateIngameMenu() : ActivateIngameMenu();
 }
-
 
 
 void AHeroPlayerController::DeactivateIngameMenu() {
@@ -34,6 +39,7 @@ void AHeroPlayerController::DeactivateIngameMenu() {
 	bEnableMouseOverEvents = false;
 	bIngameMenuActive = false;
 }
+
 
 void AHeroPlayerController::ActivateIngameMenu() {
 	if (validate(IsValid(IngameMenuClass)) == false) { return; }

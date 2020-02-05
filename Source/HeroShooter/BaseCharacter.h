@@ -8,7 +8,7 @@
 
 
 class AWeapon;
-
+class UHealthComponent;
 
 UCLASS()
 class HEROSHOOTER_API ABaseCharacter : public ACharacter
@@ -19,12 +19,17 @@ public:
 	// Sets default values for this character's properties
 	ABaseCharacter();
 
+	void SetTeamIndex(int Index);
+
+	int GetTeamIndex();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -42,18 +47,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AWeapon> StartingWeaponTemplate = nullptr;
 
-	UPROPERTY(VisibleInstanceOnly)
+	UPROPERTY(Replicated, VisibleInstanceOnly)
 	AWeapon* Weapon = nullptr;
 
 	void MoveForward(float Value);
 
 	void MoveRight(float Value);
 
-	void StartFiringRequest();
+	void StartFiring();
 
-	void StopFiringRequest();
+	void StopFiring();
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Base Character")
 	class USpringArmComponent* SpringArmComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	UHealthComponent* HealthComponent;
+
+	UPROPERTY(EditAnywhere)
+	int TeamIndex = 0; // Used to identify team player is on.
 
 };

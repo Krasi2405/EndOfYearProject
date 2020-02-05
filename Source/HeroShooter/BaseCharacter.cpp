@@ -7,6 +7,11 @@
 #include "Math/UnrealMathUtility.h"
 #include "Components/SkeletalMeshComponent.h"
 
+#include "EngineGlobals.h"
+#include "Engine/Engine.h"
+#include "Net/UnrealNetwork.h"
+
+#include "HealthComponent.h"
 #include "Weapon.h"
 #include "CustomMacros.h"
 
@@ -15,7 +20,11 @@ ABaseCharacter::ABaseCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	SetReplicatingMovement(true);
 
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(FName("HealthComponent"));
+	validate(IsValid(HealthComponent));
 }
 
 // Called when the game starts or when spawned
@@ -31,12 +40,14 @@ void ABaseCharacter::BeginPlay()
 	}
 
 	if (IsValid(StartingWeaponTemplate)) {
+		if (HasAuthority() == false) { return; }
+
 		UWorld* World = GetWorld();
 		if (validate(IsValid(World)) == false) { return; }
 
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Owner = this;
-		SpawnInfo.Instigator = Instigator;
+		SpawnInfo.Instigator = GetInstigator();
 
 		Weapon = World->SpawnActor<AWeapon>(StartingWeaponTemplate, SpawnInfo);
 		if (validate(IsValid(Weapon)) == false) { return; }
@@ -46,8 +57,6 @@ void ABaseCharacter::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s has no weapon spawned."), *GetName());
 	}
-
-	
 }
 
 // Called every frame
@@ -55,7 +64,7 @@ void ABaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (IsLocallyControlled()) {
+	if (IsLocallyControlled() && IsValid(GetController())) {
 		float MoveForwardValue = GetInputAxisValue("MoveForward");
 		MoveForward(MoveForwardValue);
 
@@ -85,8 +94,8 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ABaseCharacter::StartFiringRequest);
-	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ABaseCharacter::StopFiringRequest);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ABaseCharacter::StartFiring);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ABaseCharacter::StopFiring);
 
 	PlayerInputComponent->BindAxis("MoveForward");
 	PlayerInputComponent->BindAxis("MoveRight");
@@ -97,13 +106,13 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 }
 
 
-void ABaseCharacter::StartFiringRequest() {
-
+void ABaseCharacter::StartFiring() {
+	Weapon->PullTrigger();
 }
 
 
-void ABaseCharacter::StopFiringRequest() {
-
+void ABaseCharacter::StopFiring() {
+	Weapon->ReleaseTrigger();
 }
 
 
@@ -133,4 +142,21 @@ void ABaseCharacter::MoveRight(float Value)
 	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	// add movement in that direction
 	AddMovementInput(Direction, Value);
+}
+
+
+void ABaseCharacter::SetTeamIndex(int Index) {
+	TeamIndex = Index;
+}
+
+int ABaseCharacter::GetTeamIndex() {
+	return TeamIndex;
+}
+
+
+void ABaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABaseCharacter, Weapon);
 }

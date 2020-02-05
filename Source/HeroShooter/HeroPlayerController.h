@@ -16,6 +16,8 @@ class HEROSHOOTER_API AHeroPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+	AHeroPlayerController();
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly)

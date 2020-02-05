@@ -18,4 +18,5 @@ public:
 
 	AMenuPlayerController();
 	
+	virtual void BeginPlay() override;
 };
