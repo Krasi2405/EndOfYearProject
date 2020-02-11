@@ -20,6 +20,8 @@ class HEROSHOOTER_API AHeroPlayerController : public APlayerController
 
 protected:
 
+	virtual void BeginPlay() override;
+
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UIngameMenu> IngameMenuClass;
 

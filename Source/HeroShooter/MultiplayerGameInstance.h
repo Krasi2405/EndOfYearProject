@@ -5,10 +5,13 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "UI/MenuInterface.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "MultiplayerGameInstance.generated.h"
 
-
 class UMainMenu;
+class ALobbyGameMode;
+
 /**
  * 
  */
@@ -21,19 +24,45 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetMainMenu(UMainMenu* MainMenu);
 
+	UFUNCTION()
+	void FindSessions();
+
 protected:
 
-	UFUNCTION(Exec)
-	void Host() override;
-	
+	virtual void Init() override;
+
 
 	UFUNCTION(Exec)
-	void Join(FString IPAddress) override;
+	void Host(FCustomServerSettings ServerSettings) override;
 
-	UPROPERTY(EditDefaultsOnly)
-	FString GameMapName;
+	TOptional<FCustomServerSettings> CurrentServerSettings;
+
+	UFUNCTION(Exec)
+	void JoinIP(FString IPAddress) override;
+
+	void JoinSession(uint32 Index) override;
 
 
 	UMainMenu* MainMenu;
+
+	UFUNCTION()
+	void OnCreateSession(FName SessionName, bool bSuccessfull);
+
+	UFUNCTION()
+	void OnDestroySession(FName SessionName, bool bSuccessfull);
+
+	UFUNCTION()
+	void OnFindSessionsComplete(bool bSuccessfull);
+
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+
+	TSharedPtr<class FOnlineSessionSearch> SearchSettingsPtr;
+
+	IOnlineSubsystem* OnlineSubsystem;
+
+	IOnlineSessionPtr SessionInterface;
+
+	UPROPERTY(EditDefaultsOnly)
+	FString LobbyGamePath;
 
 };

@@ -8,19 +8,29 @@
 
 AHeroPlayerController::AHeroPlayerController() {
 	SetReplicatingMovement(true); // Needed so linetrace works on server.
+
+	bShowMouseCursor = false;
+	bEnableClickEvents = false;
+	bEnableMouseOverEvents = true;
 }
 
+
+void AHeroPlayerController::BeginPlay() {
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+}
 
 void AHeroPlayerController::SetupInputComponent() {
 	Super::SetupInputComponent();
 
 	if (validate(IsValid(InputComponent)) == false) { return; }
-
+	UE_LOG(LogTemp, Warning, TEXT("SetupInputComponent"))
 	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
 }
 
 
 void AHeroPlayerController::SwitchIngameMenu() {
+	UE_LOG(LogTemp, Warning, TEXT("Switch Ingame Menu"));
 	bIngameMenuActive ? DeactivateIngameMenu() : ActivateIngameMenu();
 }
 
@@ -36,7 +46,7 @@ void AHeroPlayerController::DeactivateIngameMenu() {
 
 	bShowMouseCursor = false;
 	bEnableTouchEvents = false;
-	bEnableMouseOverEvents = false;
+	bEnableMouseOverEvents = true;
 	bIngameMenuActive = false;
 }
 

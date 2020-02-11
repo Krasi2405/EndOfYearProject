@@ -8,9 +8,15 @@
 #include "MenuInterface.h"
 #include "MainMenu.generated.h"
 
+
 class UButton;
 class UWidgetSwitcher;
 class UEditableTextBox;
+class UScrollBox;
+class UServerInfo;
+class UEditableTextBox;
+class USpinBox;
+
 /**
  * 
  */
@@ -23,12 +29,22 @@ public:
 
 	void SetMenuInterface(IMenuInterface* MenuInterface);
 
+	void AddServer(struct FServerInfoSettings ServerSettings);
+
+	void ClearServerList();
+
+	void SelectServer(UServerInfo* ServerInfo);
+
+	UFUNCTION()
+		void JoinSelectedServerListSession();
+
 protected:
 
 	virtual bool Initialize() override;
 
+	UPROPERTY()
+	UServerInfo* SelectedServerInfo = nullptr;
 
-private:
 	UPROPERTY(meta = (BindWidget))
 	UWidget* MainMenu;
 
@@ -36,7 +52,16 @@ private:
 	UWidget* JoinMenu;
 
 	UPROPERTY(meta = (BindWidget))
+	UWidget* HostMenu;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* HostMenuButton;
+
+	UPROPERTY(meta = (BindWidget))
 	UButton* HostButton;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* HostMenuBackButton;
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* JoinMenuButton;
@@ -51,19 +76,37 @@ private:
 	UButton* QuitButton;
 
 	UPROPERTY(meta = (BindWidget))
+	UButton* RefreshServerListButton;
+
+	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* IPTextBox;
-	
+
 	UPROPERTY(meta = (BindWidget))
 	UWidgetSwitcher* MenuSwitcher;
+
+	UPROPERTY(meta = (BindWidget))
+	UScrollBox* ServerList;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* ServerNameTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* PasswordTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	USpinBox* PlayerCountSpinBox;
 
 	UFUNCTION()
 	void HostServer();
 
 	UFUNCTION()
-	void JoinServer();
+	void JoinIPServer();
 
 	UFUNCTION()
 	void EnterJoinMenu();
+
+	UFUNCTION()
+	void EnterHostMenu();
 
 	UFUNCTION()
 	void EnterMainMenu();
@@ -72,4 +115,7 @@ private:
 	void QuitGame();
 
 	IMenuInterface* MenuInterface;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UServerInfo> ServerInfoTemplate;
 };

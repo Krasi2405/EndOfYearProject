@@ -6,6 +6,17 @@
 #include "UObject/Interface.h"
 #include "MenuInterface.generated.h"
 
+
+USTRUCT()
+struct FCustomServerSettings {
+	GENERATED_BODY()
+
+		FString ServerName = "Undefined";
+	int MaxPlayerCount = 6;
+	FString Password;
+};
+
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UMenuInterface : public UInterface
@@ -14,16 +25,18 @@ class UMenuInterface : public UInterface
 };
 
 /**
- * 
+ *
  */
 class HEROSHOOTER_API IMenuInterface
 {
 	GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
+		// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 
 public:
-	virtual void Host() = 0;
+	virtual void Host(FCustomServerSettings ServerSettings) = 0;
 
-	virtual void Join(FString IPAddress) = 0;
+	virtual void JoinIP(FString IPAddress) = 0;
+
+	virtual void JoinSession(uint32 Index) = 0;
 };
