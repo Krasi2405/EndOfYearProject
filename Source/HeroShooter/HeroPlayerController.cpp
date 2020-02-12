@@ -5,10 +5,12 @@
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/GameState.h"
 #include "Engine/World.h"
+#include "UnrealNetwork.h"
 
 #include "UI/IngameMenu.h"
 #include "UI/ChatBox.h"
 #include "CustomMacros.h"
+#include "BaseCharacter.h"
 
 AHeroPlayerController::AHeroPlayerController() {
 	bReplicates = true;
@@ -24,11 +26,13 @@ void AHeroPlayerController::BeginPlay() {
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
 
-	if (validate(IsValid(ChatBoxClass)) == false) { return; }
-	ChatBox = CreateWidget<UChatBox>(this, ChatBoxClass);
-	if (validate(IsValid(ChatBox)) == false) { return; }
-	CloseChat();
-	ChatBox->AddToViewport();
+	if (IsLocalController()) {
+		if (validate(IsValid(ChatBoxClass)) == false) { return; }
+		ChatBox = CreateWidget<UChatBox>(this, ChatBoxClass);
+		if (validate(IsValid(ChatBox)) == false) { return; }
+		CloseChat();
+		ChatBox->AddToViewport();
+	}
 }
 
 void AHeroPlayerController::SetupInputComponent() {
@@ -38,7 +42,6 @@ void AHeroPlayerController::SetupInputComponent() {
 
 	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
-
 }
 
 void AHeroPlayerController::SwitchIngameMenu() {
@@ -127,4 +130,27 @@ void AHeroPlayerController::CloseChat() {
 	ChatBox->Close();
 
 	SetInputMode(FInputModeGameOnly());
+}
+
+
+void AHeroPlayerController::SetTeamIndex(int NewTeamIndex) {
+	TeamIndex = NewTeamIndex;
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	if (IsValid(BaseCharacter)) {
+		BaseCharacter->SetTeamIndex(TeamIndex);
+	}
+}
+
+int AHeroPlayerController::GetTeamIndex() {
+	return TeamIndex;
+}
+
+void AHeroPlayerController::OnRep_TeamIndex() {
+	SetTeamIndex(TeamIndex);
+}
+
+void AHeroPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AHeroPlayerController, TeamIndex);
 }

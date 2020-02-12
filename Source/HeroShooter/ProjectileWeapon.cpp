@@ -42,5 +42,7 @@ void AProjectileWeapon::ServerFire_Implementation(FVector Direction) {
 		SpawnParameters
 	);
 
+	Projectile->SetTeamIndex(Owner->GetTeamIndex());
+
 	validate(IsValid(Projectile));
 }

@@ -46,10 +46,9 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 {
 	if (validate(IsValid(OtherActor)) == false) { return; }
 
-	UE_LOG(LogTemp, Warning, TEXT("Projectile Hit: %s"), *OtherActor->GetName());
-
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
-	if (IsValid(BaseCharacter) && BaseCharacter->GetTeamIndex() == TeamIndex) { return; }
+	if (IsValid(BaseCharacter) && BaseCharacter->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
+
 	AProjectile* Projectile = Cast<AProjectile>(OtherActor);
 	if (IsValid(Projectile)) { return; }
 	// TODO: Actually fix using proper projectile collision channel.
@@ -58,8 +57,6 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	if (IsValid(HealthComponent)) {
 		HealthComponent->TakeDamage(Damage);
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Destroy projectile!"))
 
 	Destroy();
 }

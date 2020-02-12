@@ -11,13 +11,12 @@
 #include "BaseCharacter.h"
 
 void AHitscanWeapon::Fire() {
+
 }
 
 
 void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 	Super::ServerFire_Implementation(Direction);
-
-	UE_LOG(LogTemp, Warning, TEXT("%s: Hitscan ServerFire"), *GetName())
 
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
@@ -62,9 +61,7 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		if (IsValid(HealthComponent) == false) { continue; }
 
 		ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
-		if (IsValid(Character) && Character->GetTeamIndex() == TeamIndex) {
-			continue;
-		}
+		if (IsValid(Character) && Character->GetTeamIndex() == TeamIndex) { continue; }
 		HealthComponent->TakeDamage((float) Damage);
 		return;
 	}

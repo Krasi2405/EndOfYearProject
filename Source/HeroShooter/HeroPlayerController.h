@@ -27,6 +27,10 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void ReceiveMessage(const FString& PlayerName, const FString& Message);
 
+	void SetTeamIndex(int NewTeamIndex);
+
+	int GetTeamIndex();
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -67,5 +71,12 @@ protected:
 	void OpenChat();
 
 	void CloseChat();
-	
+
+	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex)
+	int TeamIndex = -1;
+
+	UFUNCTION()
+	void OnRep_TeamIndex();
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 };
