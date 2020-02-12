@@ -2,11 +2,16 @@
 
 
 #include "HeroPlayerController.h"
-#include "UI/IngameMenu.h"
+#include "GameFramework/PlayerState.h"
+#include "GameFramework/GameState.h"
+#include "Engine/World.h"
 
+#include "UI/IngameMenu.h"
+#include "UI/ChatBox.h"
 #include "CustomMacros.h"
 
 AHeroPlayerController::AHeroPlayerController() {
+	bReplicates = true;
 	SetReplicatingMovement(true); // Needed so linetrace works on server.
 
 	bShowMouseCursor = false;
@@ -18,19 +23,25 @@ AHeroPlayerController::AHeroPlayerController() {
 void AHeroPlayerController::BeginPlay() {
 	FInputModeGameOnly InputMode;
 	SetInputMode(InputMode);
+
+	if (validate(IsValid(ChatBoxClass)) == false) { return; }
+	ChatBox = CreateWidget<UChatBox>(this, ChatBoxClass);
+	if (validate(IsValid(ChatBox)) == false) { return; }
+	CloseChat();
+	ChatBox->AddToViewport();
 }
 
 void AHeroPlayerController::SetupInputComponent() {
 	Super::SetupInputComponent();
 
 	if (validate(IsValid(InputComponent)) == false) { return; }
-	UE_LOG(LogTemp, Warning, TEXT("SetupInputComponent"))
+
 	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
+	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
+
 }
 
-
 void AHeroPlayerController::SwitchIngameMenu() {
-	UE_LOG(LogTemp, Warning, TEXT("Switch Ingame Menu"));
 	bIngameMenuActive ? DeactivateIngameMenu() : ActivateIngameMenu();
 }
 
@@ -67,4 +78,53 @@ void AHeroPlayerController::ActivateIngameMenu() {
 	bEnableTouchEvents = true;
 	bEnableMouseOverEvents = true;
 	bIngameMenuActive = true;
+}
+
+
+void AHeroPlayerController::SendMessageRequest_Implementation(const FString& Message) {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+	AGameState* GameState = Cast<AGameState>(World->GetGameState());
+
+	FString PlayerName = GetName();
+
+	if (validate(IsValid(GameState)) == false) { return; }
+	TArray<APlayerState*>& PlayerStates = GameState->PlayerArray;
+	for (APlayerState* PlayerState : PlayerStates) {
+		if (validate(IsValid(PlayerState)) == false) { continue; }
+		APawn* ControlledPawn = PlayerState->GetPawn();
+		if (validate(IsValid(ControlledPawn)) == false) { continue; }
+		AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(ControlledPawn->GetController());
+		if (validate(IsValid(PlayerController)) == false) { continue; }
+		
+		PlayerController->ReceiveMessage(PlayerName, Message);
+	}
+
+}
+
+
+void AHeroPlayerController::ReceiveMessage_Implementation(const FString& PlayerName, const FString& Message) {
+	if (validate(IsValid(ChatBox)) == false) { return; }
+	ChatBox->AddMessage(PlayerName, Message);
+}
+
+
+void AHeroPlayerController::ToggleChat() {
+	ChatBox->GetVisibility() == ESlateVisibility::Visible ? CloseChat() : OpenChat();
+}
+
+
+void AHeroPlayerController::OpenChat() {
+	if (validate(IsValid(ChatBox)) == false) { return; }
+	ChatBox->Open();
+
+	SetInputMode(FInputModeGameAndUI());
+}
+
+
+void AHeroPlayerController::CloseChat() {
+	if (validate(IsValid(ChatBox)) == false) { return; }
+	ChatBox->Close();
+
+	SetInputMode(FInputModeGameOnly());
 }
