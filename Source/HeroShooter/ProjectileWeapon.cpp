@@ -17,8 +17,6 @@ void AProjectileWeapon::Fire() {
 void AProjectileWeapon::ServerFire_Implementation(FVector Direction) {
 	Super::ServerFire_Implementation(Direction);
 
-	UE_LOG(LogTemp, Warning, TEXT("%s: Projectile ServerFire"), *GetName())
-
 	if (validate(IsValid(ProjectileTemplate)) == false) { return; }
 
 	UWorld* World = GetWorld();
@@ -32,7 +30,7 @@ void AProjectileWeapon::ServerFire_Implementation(FVector Direction) {
 	SpawnParameters.Instigator = Owner->Instigator;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	FVector ProjectileSpawnLocation = GetActorLocation() + FiringPoint;;
+	FVector ProjectileSpawnLocation = GetActorLocation() + FiringPoint;
 	FRotator ProjectileSpawnRotation = Direction.Rotation();
 
 	AProjectile* Projectile = World->SpawnActor<AProjectile>(

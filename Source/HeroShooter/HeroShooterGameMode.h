@@ -12,7 +12,7 @@ class AHeroPlayerController;
  * 
  */
 UCLASS()
-class HEROSHOOTER_API AHeroShooterGameMode : public AGameMode
+class HEROSHOOTER_API AHeroShooterGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
@@ -32,6 +32,8 @@ protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 	virtual void Logout(AController* Exiting) override;
+
+	virtual void InitGameState() override;
 
 	TArray<TArray<AHeroPlayerController*>*> Teams = TArray<TArray<AHeroPlayerController*>*>();
 	

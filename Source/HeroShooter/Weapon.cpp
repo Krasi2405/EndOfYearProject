@@ -24,8 +24,6 @@ void AWeapon::BeginPlay()
 	CurrentAmmo = MaxAmmo;
 	ENetRole NetRole = GetRemoteRole();
 	ENetMode NetMode = GetNetMode();
-	UE_LOG(LogTemp, Warning, TEXT("%s: NetMode: %d"), *GetName(), NetMode);
-	UE_LOG(LogTemp, Warning, TEXT("%s: NetRole: %d"), *GetName(), NetRole);
 }
 
 

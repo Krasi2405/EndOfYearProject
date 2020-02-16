@@ -160,3 +160,12 @@ void ABaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& Out
 
 	DOREPLIFETIME(ABaseCharacter, Weapon);
 }
+
+
+void ABaseCharacter::Destroyed() {
+	Super::Destroyed();
+
+	if (IsValid(Weapon)) {
+		Weapon->Destroy();
+	}
+}

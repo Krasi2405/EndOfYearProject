@@ -34,6 +34,8 @@ protected:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void Destroyed() override;
+
 	UPROPERTY(EditDefaultsOnly)
 	float MinControlPitch = -80.0f;
 	

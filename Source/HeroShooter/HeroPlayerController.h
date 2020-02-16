@@ -8,6 +8,9 @@
 
 class UIngameMenu;
 class UChatBox;
+class UHeroPickerMenu;
+class AHeroSpawner;
+class ABaseCharacter;
 
 /**
  * 
@@ -31,9 +34,21 @@ public:
 
 	int GetTeamIndex();
 
+	void TeleportSpectatorToHeroPicker();
+
+	AHeroSpawner* GetTeamSpawner();
+
 protected:
 
 	virtual void BeginPlay() override;
+
+	// Team Index may be updated before or after begin play.
+	// If updated after begin play the responsibility is given to begin play for calling TeamSetup function.
+	bool bBeginPlayExecuted = false;
+
+
+	UPROPERTY()
+	AHeroSpawner* TeamSpawner;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UIngameMenu> IngameMenuClass;
@@ -47,6 +62,26 @@ protected:
 
 	UPROPERTY()
 	UChatBox* ChatBox;
+
+
+	UPROPERTY(EditDefaultsONly)
+	TSubclassOf<UHeroPickerMenu> HeroPickerClass;
+
+	UHeroPickerMenu* HeroPicker;
+
+	UFUNCTION()
+	void ChooseHero(TSubclassOf<ABaseCharacter> Hero);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSpawnHero(TSubclassOf<ABaseCharacter> Hero);
+
+	void ServerSpawnHero_Implementation(TSubclassOf<ABaseCharacter> Hero);
+
+
+	void ActivateHeroPicker();
+
+	void DeactivateHeroPicker();
+
 
 	bool bOpenChat = false;
 
@@ -75,8 +110,15 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex)
 	int TeamIndex = -1;
 
+	int LastTeamSetupIndex = -1;
+
+	// Called after team index is changed on client and right away on server.
+	void TeamSetup();
+
 	UFUNCTION()
 	void OnRep_TeamIndex();
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+	
 };

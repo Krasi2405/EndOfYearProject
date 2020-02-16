@@ -2,8 +2,11 @@
 
 
 #include "HeroShooterGameMode.h"
+#include "Engine/World.h"
 
+#include "HeroShooterGameState.h"
 #include "HeroPlayerController.h"
+#include "HeroSpawner.h"
 #include "CustomMacros.h"
 
 void AHeroShooterGameMode::PostLogin(APlayerController* NewPlayer) {
@@ -22,7 +25,9 @@ void AHeroShooterGameMode::PostLogin(APlayerController* NewPlayer) {
 	HeroController->SetTeamIndex(TeamIndex);
 
 	UE_LOG(LogTemp, Warning, TEXT("Assign %s to %d Team"), *HeroController->GetName(), TeamIndex);
+
 }
+
 
 void AHeroShooterGameMode::Logout(AController* Exiting) {
 	Super::Logout(Exiting);
@@ -43,10 +48,25 @@ void AHeroShooterGameMode::Logout(AController* Exiting) {
 void AHeroShooterGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) {
 	Super::InitGame(MapName, Options, ErrorMessage);
 
-	if (validate(TeamCount > 0) == false) { return; }
+	if (validate(TeamCount > 0) == false) { 
+		ErrorMessage = "No team count in gamemode!";
+		return;
+	}
+
 
 	for (int i = 0; i < TeamCount; i++) {
 		Teams.Add(new TArray<AHeroPlayerController*>());
+	}
+}
+
+void AHeroShooterGameMode::InitGameState() {
+	Super::InitGameState();
+
+	UE_LOG(LogTemp, Warning, TEXT("InitGameState"))
+	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
+	if (validate(IsValid(GameState)) == false) {
+		UE_LOG(LogTemp, Error, TEXT("GameState should inherit from AHeroShooterGameState!"))
+		return; 
 	}
 }
 

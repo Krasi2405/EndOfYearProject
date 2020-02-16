@@ -2,4 +2,13 @@
 
 
 #include "HeroShooterGameState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
 
+#include "HeroSpawner.h"
+#include "CustomMacros.h"
+
+
+UDataTable* AHeroShooterGameState::GetHeroList() {
+	return HeroListTable;
+}
