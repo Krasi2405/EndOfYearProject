@@ -145,15 +145,6 @@ void ABaseCharacter::MoveRight(float Value)
 }
 
 
-void ABaseCharacter::SetTeamIndex(int Index) {
-	TeamIndex = Index;
-}
-
-int ABaseCharacter::GetTeamIndex() {
-	return TeamIndex;
-}
-
-
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

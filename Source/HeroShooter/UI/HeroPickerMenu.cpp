@@ -10,10 +10,10 @@
 #include "HeroTableRow.h"
 #include "HeroPickerItem.h"
 #include "CustomMacros.h"
-#include "HeroShooterGameState.h"
 #include "BaseCharacter.h"
 #include "HeroPlayerController.h"
 #include "HeroSpawner.h"
+#include "GameModes/HeroShooterGameState.h"
 
 
 bool UHeroPickerMenu::Initialize() {

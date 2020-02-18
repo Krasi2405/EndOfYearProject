@@ -7,16 +7,20 @@
 #include "Engine/World.h"
 #include "UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
 
 #include "UI/IngameMenu.h"
 #include "UI/ChatBox.h"
 #include "UI/HeroPickerMenu.h"
 #include "CustomMacros.h"
 #include "BaseCharacter.h"
-#include "HeroShooterGameState.h"
 #include "HeroSpawner.h"
 #include "BaseCharacter.h"
 #include "GameFramework/SpectatorPawn.h"
+#include "HealthComponent.h"
+#include "GameModes/HeroShooterGameMode.h"
+#include "GameModes/HeroShooterGameState.h"
+#include "GameModes/GameModeInfoWidget.h"
 
 AHeroPlayerController::AHeroPlayerController() {
 	bReplicates = true;
@@ -28,8 +32,64 @@ AHeroPlayerController::AHeroPlayerController() {
 }
 
 
+
+void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
+	Super::AcknowledgePossession(Pawn);
+
+	ABaseCharacter* PossessedCharacter = Cast<ABaseCharacter>(Pawn);
+	if (validate(IsValid(PossessedCharacter)) == false) { return; }
+
+	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
+	if (validate(IsValid(HealthComponent)) == false) { return; }
+
+	// TODO: Respawn timer.
+}
+
+
+
+void AHeroPlayerController::OnPossess(APawn* Pawn) {
+	Super::OnPossess(Pawn);
+
+	if (validate(IsValid(Pawn)) == false) { return; }
+
+	ABaseCharacter* PossessedCharacter = Cast<ABaseCharacter>(Pawn);
+	if (validate(IsValid(PossessedCharacter)) == false) { return; }
+	
+	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
+	if (validate(IsValid(HealthComponent)) == false) { return; }
+	HealthComponent->OnDeath.AddDynamic(this, &AHeroPlayerController::ServerHandleDeath);
+}
+
+
+void AHeroPlayerController::ServerHandleDeath() {
+	if (validate(HasAuthority()) == false) { return; }
+	UE_LOG(LogTemp, Warning, TEXT("%s has died!"), *GetName());
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+	AHeroShooterGameMode* GameMode = Cast<AHeroShooterGameMode>(World->GetAuthGameMode());
+	if (validate(IsValid(GameMode)) == false) { return; }
+	GameMode->HandleDeath(this);
+
+	// TODO: Wait a bit and respawn player
+}
+
+
 void AHeroPlayerController::BeginPlay() {
 	if (IsLocalController()) {
+		UWorld* World = GetWorld();
+		if (validate(IsValid(World)) == false) { return; }
+		AHeroShooterGameState* GameState = World->GetGameState<AHeroShooterGameState>();
+		if (validate(IsValid(GameState)) == false) { return; }
+		GameState->OnWinConditionSent.AddDynamic(this, &AHeroPlayerController::HandleWinCondition);
+
+		TSubclassOf<UGameModeInfoWidget> InfoWidgetTemplate = GameState->GetInfoWidgetTemplate();
+		if (validate(IsValid(InfoWidgetTemplate)) == false) { return; }
+		GameModeInfoWidget = CreateWidget<UGameModeInfoWidget>(this, InfoWidgetTemplate);
+		if (validate(IsValid(GameModeInfoWidget)) == false) { return; }
+		GameModeInfoWidget->AddToViewport();
+		GameModeInfoWidget->Setup(GameState);
+
 		if (validate(IsValid(ChatBoxClass)) == false) { return; }
 		ChatBox = CreateWidget<UChatBox>(this, ChatBoxClass);
 		if (validate(IsValid(ChatBox)) == false) { return; }
@@ -53,6 +113,7 @@ void AHeroPlayerController::BeginPlay() {
 	bBeginPlayExecuted = true;
 }
 
+
 void AHeroPlayerController::SetupInputComponent() {
 	Super::SetupInputComponent();
 
@@ -61,6 +122,7 @@ void AHeroPlayerController::SetupInputComponent() {
 	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
 }
+
 
 void AHeroPlayerController::SwitchIngameMenu() {
 	bIngameMenuActive ? DeactivateIngameMenu() : ActivateIngameMenu();
@@ -153,10 +215,6 @@ void AHeroPlayerController::CloseChat() {
 
 void AHeroPlayerController::SetTeamIndex(int NewTeamIndex) {
 	TeamIndex = NewTeamIndex;
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
-	if (IsValid(BaseCharacter)) {
-		BaseCharacter->SetTeamIndex(TeamIndex);
-	}
 
 	if (LastTeamSetupIndex != TeamIndex && bBeginPlayExecuted) {
 		TeamSetup();
@@ -254,4 +312,25 @@ void AHeroPlayerController::DeactivateHeroPicker() {
 
 	if (validate(IsValid(HeroPicker)) == false) { return; }
 	HeroPicker->SetVisibility(ESlateVisibility::Hidden);
+}
+
+
+
+void AHeroPlayerController::HandleWinCondition(int WinningTeamIndex) {
+	WinningTeamIndex == TeamIndex ? ShowWinningDisplay() : ShowLosingDisplay();
+}
+
+
+void AHeroPlayerController::ShowWinningDisplay() {
+	if (validate(IsValid(WinningTeamMessageWidget)) == false) { return; }
+	UUserWidget* WinningDisplay = CreateWidget(this, WinningTeamMessageWidget);
+	if (validate(IsValid(WinningDisplay)) == false) { return; }
+	WinningDisplay->AddToViewport();
+}
+
+void AHeroPlayerController::ShowLosingDisplay() {
+	if (validate(IsValid(LosingTeamMessageWidget)) == false) { return; }
+	UUserWidget* LosingDisplay = CreateWidget(this, LosingTeamMessageWidget);
+	if (validate(IsValid(LosingDisplay)) == false) { return; }
+	LosingDisplay->AddToViewport();
 }

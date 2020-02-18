@@ -7,7 +7,7 @@
 #include "UI/MainMenu.h"
 #include "UI/ServerInfo.h"
 #include "CustomMacros.h"
-#include "LobbyGameMode.h"
+#include "GameModes/LobbyGameMode.h"
 
 // Doing this so I can test locally in one instance of the engine.
 const static FName HOST_SESSION_NAME = TEXT("SessionGame");

@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 
+#include "HeroPlayerController.h"
 #include "CustomMacros.h"
 #include "HealthComponent.h"
 #include "BaseCharacter.h"
@@ -52,7 +53,10 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		QueryParams
 	);
 
-	int TeamIndex = Owner->GetTeamIndex();
+	AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(Owner->GetController());
+	if (validate(IsValid(OwnerController)) == false) { return; }
+
+	int TeamIndex = OwnerController->GetTeamIndex();
 	for (FHitResult HitResult : OutHits) {
 		AActor* HitActor = HitResult.Actor.Get();
 		if (validate(IsValid(HitActor)) == false) { return; }
@@ -61,7 +65,9 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		if (IsValid(HealthComponent) == false) { continue; }
 
 		ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
-		if (IsValid(Character) && Character->GetTeamIndex() == TeamIndex) { continue; }
+		if (IsValid(Character) == false) { return; }
+		AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(Character->GetController());
+		if (IsValid(OwnerController) && OwnerController->GetTeamIndex() == TeamIndex) { continue; }
 		HealthComponent->TakeDamage((float) Damage);
 		return;
 	}

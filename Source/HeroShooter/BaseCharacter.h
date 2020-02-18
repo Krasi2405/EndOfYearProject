@@ -19,10 +19,6 @@ public:
 	// Sets default values for this character's properties
 	ABaseCharacter();
 
-	void SetTeamIndex(int Index);
-
-	int GetTeamIndex();
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -65,8 +61,5 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UHealthComponent* HealthComponent;
-
-	UPROPERTY(EditAnywhere)
-	int TeamIndex = 0; // Used to identify team player is on.
 
 };

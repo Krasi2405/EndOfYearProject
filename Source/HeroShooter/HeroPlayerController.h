@@ -11,6 +11,7 @@ class UChatBox;
 class UHeroPickerMenu;
 class AHeroSpawner;
 class ABaseCharacter;
+class UGameModeInfoWidget;
 
 /**
  * 
@@ -36,16 +37,25 @@ public:
 
 	void TeleportSpectatorToHeroPicker();
 
-	AHeroSpawner* GetTeamSpawner();
-
 protected:
 
+	
 	virtual void BeginPlay() override;
+
+	// Only called on client
+	virtual void AcknowledgePossession(class APawn* Pawn) override;
+
+	// Only called on server.
+	virtual void OnPossess(class APawn* Pawn) override;
 
 	// Team Index may be updated before or after begin play.
 	// If updated after begin play the responsibility is given to begin play for calling TeamSetup function.
 	bool bBeginPlayExecuted = false;
 
+	UFUNCTION()
+	void ServerHandleDeath();
+
+	UGameModeInfoWidget* GameModeInfoWidget;
 
 	UPROPERTY()
 	AHeroSpawner* TeamSpawner;
@@ -107,7 +117,7 @@ protected:
 
 	void CloseChat();
 
-	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex)
+	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex, VisibleAnywhere)
 	int TeamIndex = -1;
 
 	int LastTeamSetupIndex = -1;
@@ -120,5 +130,17 @@ protected:
 
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
-	
+	UFUNCTION()
+	void HandleWinCondition(int WinningTeamIndex);
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> WinningTeamMessageWidget;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUserWidget> LosingTeamMessageWidget;
+
+	void ShowWinningDisplay();
+
+	void ShowLosingDisplay();
+
 };

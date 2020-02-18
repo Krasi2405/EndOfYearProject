@@ -14,6 +14,7 @@ AWeapon::AWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
+
 }
 
 
@@ -22,8 +23,6 @@ void AWeapon::BeginPlay()
 	Super::BeginPlay();
 	
 	CurrentAmmo = MaxAmmo;
-	ENetRole NetRole = GetRemoteRole();
-	ENetMode NetMode = GetNetMode();
 }
 
 
@@ -52,7 +51,6 @@ void AWeapon::PreFire() {
 	}
 	Fire();
 
-	
 	ServerFire(GetAimingReticleDirection());
 }
 

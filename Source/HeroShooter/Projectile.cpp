@@ -8,6 +8,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/SphereComponent.h"
 
+#include "HeroPlayerController.h"
 #include "BaseCharacter.h"
 #include "HealthComponent.h"
 #include "CustomMacros.h"
@@ -38,7 +39,7 @@ void AProjectile::BeginPlay()
 
 		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::AProjectile::OnOverlapBegin);
 		SphereComponent->IgnoreActorWhenMoving(Owner, true);
-		SphereComponent->IgnoreActorWhenMoving(Owner, true);
+		SphereComponent->IgnoreActorWhenMoving(this, true);
 	}
 }
 
@@ -46,16 +47,22 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 {
 	if (validate(IsValid(OtherActor)) == false) { return; }
 
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
-	if (IsValid(BaseCharacter) && BaseCharacter->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
+	if (HasAuthority()) {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
+		if (IsValid(BaseCharacter)) {
+			AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(BaseCharacter->GetController());
+			if (validate(IsValid(OwnerController)) == false) { return; }
 
-	AProjectile* Projectile = Cast<AProjectile>(OtherActor);
-	if (IsValid(Projectile)) { return; }
-	// TODO: Actually fix using proper projectile collision channel.
+			if (OwnerController->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
 
-	UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
-	if (IsValid(HealthComponent)) {
-		HealthComponent->TakeDamage(Damage);
+			AProjectile* Projectile = Cast<AProjectile>(OtherActor);
+			if (IsValid(Projectile)) { return; }
+			// TODO: Actually fix using proper projectile collision channel.
+		}
+		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
+		if (IsValid(HealthComponent)) {
+			HealthComponent->TakeDamage(Damage);
+		}
 	}
 
 	Destroy();
