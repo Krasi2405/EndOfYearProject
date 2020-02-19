@@ -35,9 +35,6 @@ void UMultiplayerGameInstance::Init() {
 void UMultiplayerGameInstance::OnCreateSession(FName SessionName, bool bSuccessfull) {
 	if (validate(bSuccessfull) == false) { return; }
 
-	UEngine* Engine = GetEngine();
-	if (validate(Engine != nullptr) == false) { return; }
-	Engine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, TEXT("Hosting!"));
 	UWorld* World = GetWorld();
 	if (validate(World != nullptr) == false) { return; }
 
@@ -82,22 +79,19 @@ void UMultiplayerGameInstance::Host(FCustomServerSettings ServerSettings) {
 
 
 void UMultiplayerGameInstance::JoinIP(FString IPAddress) {
-	UEngine* Engine = GetEngine();
-	if (validate(Engine != nullptr) == false) { return; }
-	Engine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan, TEXT("Joining ") + IPAddress);
-
 	APlayerController* PlayerController = GetFirstLocalPlayerController();
 	if (validate(PlayerController != nullptr) == false) { return; }
+
 	PlayerController->ClientTravel(IPAddress, ETravelType::TRAVEL_Absolute);
 }
 
 
 void UMultiplayerGameInstance::JoinSession(uint32 Index) {
 	if (validate(SessionInterface != nullptr) == false) { return; }
-	if (validate(SearchSettingsPtr.IsValid()) == false) { return; }
-	if (validate(SearchSettingsPtr->SearchResults.IsValidIndex(Index)) == false) { return; }
+	if (validate(SearchSettings.IsValid()) == false) { return; }
+	if (validate(SearchSettings->SearchResults.IsValidIndex(Index)) == false) { return; }
 
-	FOnlineSessionSearchResult Session = SearchSettingsPtr->SearchResults[Index];
+	FOnlineSessionSearchResult Session = SearchSettings->SearchResults[Index];
 	SessionInterface->JoinSession(0, JOIN_SESSION_NAME, Session);
 }
 
@@ -113,8 +107,8 @@ void UMultiplayerGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinS
 			UE_LOG(LogTemp, Error, TEXT("Could not resolve address!"));
 			return;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Got Address: %s"), *Address);
 		JoinIP(Address);
+
 	}
 	else if (Result == EOnJoinSessionCompleteResult::AlreadyInSession)
 	{
@@ -136,25 +130,25 @@ void UMultiplayerGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinS
 void UMultiplayerGameInstance::FindSessions() {
 	if (validate(SessionInterface != nullptr) == false) { return; }
 
-	SearchSettingsPtr = (MakeShareable(new FOnlineSessionSearch()));
+	SearchSettings = (MakeShareable(new FOnlineSessionSearch()));
 
 #if WITH_EDITOR
-	SearchSettingsPtr->bIsLanQuery = true;
+	SearchSettings->bIsLanQuery = true;
 #else
 	SearchSettingsPtr->bIsLanQuery = false;
 #endif
-	SearchSettingsPtr->TimeoutInSeconds = 3;
-	SearchSettingsPtr->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
-	SearchSettingsPtr->MaxSearchResults = 500; // Used because sharing app id with other games.
+	SearchSettings->TimeoutInSeconds = 3;
+	SearchSettings->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	SearchSettings->MaxSearchResults = 500; // Used because sharing app id with other games.
 
-	SessionInterface->FindSessions(0, SearchSettingsPtr.ToSharedRef());
+	SessionInterface->FindSessions(0, SearchSettings.ToSharedRef());
 }
 
 
 void UMultiplayerGameInstance::OnFindSessionsComplete(bool bSuccess) {
 	if (validate(bSuccess) == false) { return; }
 
-	TArray<FOnlineSessionSearchResult> SessionsFound = SearchSettingsPtr->SearchResults;
+	TArray<FOnlineSessionSearchResult> SessionsFound = SearchSettings->SearchResults;
 	if (SessionsFound.Num() == 0) {
 		UE_LOG(LogTemp, Error, TEXT("No Sessions Found!"));
 		return;

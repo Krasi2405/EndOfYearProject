@@ -11,7 +11,7 @@ USTRUCT()
 struct FCustomServerSettings {
 	GENERATED_BODY()
 
-		FString ServerName = "Undefined";
+	FString ServerName = "Undefined";
 	int MaxPlayerCount = 6;
 	FString Password;
 };
@@ -31,10 +31,10 @@ class HEROSHOOTER_API IMenuInterface
 {
 	GENERATED_BODY()
 
-		// Add interface functions to this class. This is the class that will be inherited to implement this interface.
-
 public:
 	virtual void Host(FCustomServerSettings ServerSettings) = 0;
+
+	virtual void FindSessions() = 0;
 
 	virtual void JoinIP(FString IPAddress) = 0;
 

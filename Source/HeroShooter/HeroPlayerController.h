@@ -9,9 +9,9 @@
 class UIngameMenu;
 class UChatBox;
 class UHeroPickerMenu;
+class UGameModeInfoWidget;
 class AHeroSpawner;
 class ABaseCharacter;
-class UGameModeInfoWidget;
 
 /**
  * 
@@ -26,10 +26,10 @@ public:
 	AHeroPlayerController();
 
 	UFUNCTION(Server, Reliable)
-	void SendMessageRequest(const FString& Message);
+	void ServerSendMessageRequest(const FString& Message);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void ReceiveMessage(const FString& PlayerName, const FString& Message);
+	UFUNCTION(Client, Reliable)
+	void ClientReceiveMessage(const FString& PlayerName, const FString& Message);
 
 	void SetTeamIndex(int NewTeamIndex);
 
@@ -42,42 +42,27 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+	// Team Index may be updated before or after begin play.
+	// If updated after begin play the responsibility is given to begin play for calling TeamSetup function.
+	bool bBeginPlayExecuted = false;
+
 	// Only called on client
 	virtual void AcknowledgePossession(class APawn* Pawn) override;
 
 	// Only called on server.
 	virtual void OnPossess(class APawn* Pawn) override;
 
-	// Team Index may be updated before or after begin play.
-	// If updated after begin play the responsibility is given to begin play for calling TeamSetup function.
-	bool bBeginPlayExecuted = false;
+	virtual void SetupInputComponent() override;
+
 
 	UFUNCTION()
 	void ServerHandleDeath();
 
-	UGameModeInfoWidget* GameModeInfoWidget;
-
 	UPROPERTY()
 	AHeroSpawner* TeamSpawner;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UIngameMenu> IngameMenuClass;
 
-	UPROPERTY()
-	UIngameMenu* IngameMenu;
-
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UChatBox> ChatBoxClass;
-
-	UPROPERTY()
-	UChatBox* ChatBox;
-
-
-	UPROPERTY(EditDefaultsONly)
-	TSubclassOf<UHeroPickerMenu> HeroPickerClass;
-
-	UHeroPickerMenu* HeroPicker;
+	
 
 	UFUNCTION()
 	void ChooseHero(TSubclassOf<ABaseCharacter> Hero);
@@ -93,29 +78,19 @@ protected:
 	void DeactivateHeroPicker();
 
 
-	bool bOpenChat = false;
+	void ToggleChat();
 
-	
-	void SendMessageRequest_Implementation(const FString& Message);
+	bool bChatOpen = false;
 
-	void ReceiveMessage_Implementation(const FString& PlayerName, const FString& Message);
+	void ServerSendMessageRequest_Implementation(const FString& Message);
+
+	void ClientReceiveMessage_Implementation(const FString& PlayerName, const FString& Message);
 
 
-	virtual void SetupInputComponent() override;
-
-	void SwitchIngameMenu();
-
-	void DeactivateIngameMenu();
-
-	void ActivateIngameMenu();
+	void ToggleIngameMenu();
 
 	bool bIngameMenuActive = false;
 
-	void ToggleChat();
-
-	void OpenChat();
-
-	void CloseChat();
 
 	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex, VisibleAnywhere)
 	int TeamIndex = -1;
@@ -132,15 +107,5 @@ protected:
 
 	UFUNCTION()
 	void HandleWinCondition(int WinningTeamIndex);
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UUserWidget> WinningTeamMessageWidget;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UUserWidget> LosingTeamMessageWidget;
-
-	void ShowWinningDisplay();
-
-	void ShowLosingDisplay();
 
 };

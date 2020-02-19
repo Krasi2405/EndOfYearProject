@@ -56,7 +56,7 @@ protected:
 
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
-	TSharedPtr<class FOnlineSessionSearch> SearchSettingsPtr;
+	TSharedPtr<class FOnlineSessionSearch> SearchSettings;
 
 	IOnlineSubsystem* OnlineSubsystem;
 

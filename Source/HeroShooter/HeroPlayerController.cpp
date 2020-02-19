@@ -8,7 +8,9 @@
 #include "UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
+#include "Engine/Player.h"
 
+#include "UI/IngameHUD.h"
 #include "UI/IngameMenu.h"
 #include "UI/ChatBox.h"
 #include "UI/HeroPickerMenu.h"
@@ -43,6 +45,9 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 	if (validate(IsValid(HealthComponent)) == false) { return; }
 
 	// TODO: Respawn timer.
+
+
+	DeactivateHeroPicker();
 }
 
 
@@ -83,27 +88,15 @@ void AHeroPlayerController::BeginPlay() {
 		if (validate(IsValid(GameState)) == false) { return; }
 		GameState->OnWinConditionSent.AddDynamic(this, &AHeroPlayerController::HandleWinCondition);
 
-		TSubclassOf<UGameModeInfoWidget> InfoWidgetTemplate = GameState->GetInfoWidgetTemplate();
-		if (validate(IsValid(InfoWidgetTemplate)) == false) { return; }
-		GameModeInfoWidget = CreateWidget<UGameModeInfoWidget>(this, InfoWidgetTemplate);
-		if (validate(IsValid(GameModeInfoWidget)) == false) { return; }
-		GameModeInfoWidget->AddToViewport();
-		GameModeInfoWidget->Setup(GameState);
+		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+		if (validate(IsValid(IngameHUD)) == false) { return; }
+		IngameHUD->SetupWidgets(GameState);
 
-		if (validate(IsValid(ChatBoxClass)) == false) { return; }
-		ChatBox = CreateWidget<UChatBox>(this, ChatBoxClass);
-		if (validate(IsValid(ChatBox)) == false) { return; }
-		CloseChat();
-		ChatBox->AddToViewport();
-
-		if (validate(IsValid(HeroPickerClass)) == false) { return; }
-		HeroPicker = CreateWidget<UHeroPickerMenu>(this, HeroPickerClass);
+		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
 		if (validate(IsValid(HeroPicker)) == false) { return; }
-		HeroPicker->AddToViewport();
 		HeroPicker->OnHeroSelected.AddDynamic(this, &AHeroPlayerController::ChooseHero);
 
-		FInputModeUIOnly InputMode;
-		SetInputMode(InputMode);
+		IngameHUD->ActivateHeroPicker();
 	}
 	
 	if (LastTeamSetupIndex != TeamIndex) {
@@ -119,97 +112,55 @@ void AHeroPlayerController::SetupInputComponent() {
 
 	if (validate(IsValid(InputComponent)) == false) { return; }
 
-	InputComponent->BindAction(FName("SwitchIngameMenu"), IE_Pressed, this, &AHeroPlayerController::SwitchIngameMenu);
+	InputComponent->BindAction(FName("ToggleIngameMenu"), IE_Pressed, this, &AHeroPlayerController::ToggleIngameMenu);
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
 }
 
 
-void AHeroPlayerController::SwitchIngameMenu() {
-	bIngameMenuActive ? DeactivateIngameMenu() : ActivateIngameMenu();
+void AHeroPlayerController::ToggleIngameMenu() {
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	bIngameMenuActive ? IngameHUD->DeactivateIngameMenu() : IngameHUD->ActivateIngameMenu();
+	bIngameMenuActive = !bIngameMenuActive;
 }
 
 
-void AHeroPlayerController::DeactivateIngameMenu() {
-	if (validate(IsValid(IngameMenu)) == false) { return; }
-
-	IngameMenu->RemoveFromViewport();
-	IngameMenu = nullptr;
-
-	FInputModeGameOnly InputModeData;
-	SetInputMode(InputModeData);
-
-	bShowMouseCursor = false;
-	bEnableTouchEvents = false;
-	bEnableMouseOverEvents = true;
-	bIngameMenuActive = false;
-}
-
-
-void AHeroPlayerController::ActivateIngameMenu() {
-	if (validate(IsValid(IngameMenuClass)) == false) { return; }
-	if (validate(IsValid(IngameMenu) == false) == false) { return; }
-
-	IngameMenu = CreateWidget<UIngameMenu>(this, IngameMenuClass);
-	IngameMenu->AddToViewport();
-
-	FInputModeGameAndUI InputModeData;
-	InputModeData.SetWidgetToFocus(IngameMenu->TakeWidget());
-	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputModeData);
-
-	bShowMouseCursor = true;
-	bEnableTouchEvents = true;
-	bEnableMouseOverEvents = true;
-	bIngameMenuActive = true;
-}
-
-
-void AHeroPlayerController::SendMessageRequest_Implementation(const FString& Message) {
+void AHeroPlayerController::ServerSendMessageRequest_Implementation(const FString& Message) {
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
-	AGameState* GameState = Cast<AGameState>(World->GetGameState());
+	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
 
 	FString PlayerName = GetName();
 
 	if (validate(IsValid(GameState)) == false) { return; }
 	TArray<APlayerState*>& PlayerStates = GameState->PlayerArray;
+
 	for (APlayerState* PlayerState : PlayerStates) {
-		if (validate(IsValid(PlayerState)) == false) { continue; }
-		APawn* ControlledPawn = PlayerState->GetPawn();
-		if (validate(IsValid(ControlledPawn)) == false) { continue; }
-		AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(ControlledPawn->GetController());
+		if (validate(IsValid(PlayerState)) == false) { return; }
+		AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(PlayerState->GetOwner());
 		if (validate(IsValid(PlayerController)) == false) { continue; }
 		
-		PlayerController->ReceiveMessage(PlayerName, Message);
+		
+		PlayerController->ClientReceiveMessage(PlayerName, Message);
 	}
-
 }
 
 
-void AHeroPlayerController::ReceiveMessage_Implementation(const FString& PlayerName, const FString& Message) {
-	if (validate(IsValid(ChatBox)) == false) { return; }
-	ChatBox->AddMessage(PlayerName, Message);
+void AHeroPlayerController::ClientReceiveMessage_Implementation(const FString& PlayerName, const FString& Message) {
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	IngameHUD->AddChatMessage(PlayerName, Message);
 }
 
 
 void AHeroPlayerController::ToggleChat() {
-	ChatBox->GetVisibility() == ESlateVisibility::Visible ? CloseChat() : OpenChat();
-}
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
 
-
-void AHeroPlayerController::OpenChat() {
-	if (validate(IsValid(ChatBox)) == false) { return; }
-	ChatBox->Open();
-
-	SetInputMode(FInputModeGameAndUI());
-}
-
-
-void AHeroPlayerController::CloseChat() {
-	if (validate(IsValid(ChatBox)) == false) { return; }
-	ChatBox->Close();
-
-	SetInputMode(FInputModeGameOnly());
+	bChatOpen ? IngameHUD->CloseChat() : IngameHUD->OpenChat();
+	bChatOpen = !bChatOpen;
 }
 
 
@@ -270,6 +221,12 @@ void AHeroPlayerController::TeamSetup() {
 	}
 	
 	if (IsLocalController()) {
+		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+		if (validate(IsValid(IngameHUD)) == false) { return; }
+
+		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
+		if (validate(IsValid(HeroPicker)) == false) { return; }
+
 		if (validate(IsValid(HeroPicker)) == false) { return; }
 		if (validate(IsValid(TeamSpawner)) == false) { return; }
 		TeamSpawner->Setup(this);
@@ -286,7 +243,6 @@ void AHeroPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 }
 
 void AHeroPlayerController::ChooseHero(TSubclassOf<ABaseCharacter> Hero) {
-	DeactivateHeroPicker();
 	ServerSpawnHero(Hero);
 }
 
@@ -298,39 +254,24 @@ void AHeroPlayerController::ServerSpawnHero_Implementation(TSubclassOf<ABaseChar
 
 
 void AHeroPlayerController::ActivateHeroPicker() {
-	bShowMouseCursor = true;
-	SetInputMode(FInputModeUIOnly());
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
 
-	if (validate(IsValid(HeroPicker)) == false) { return; }
-	HeroPicker->SetVisibility(ESlateVisibility::Visible);
+	IngameHUD->ActivateHeroPicker();
 }
 
 
 void AHeroPlayerController::DeactivateHeroPicker() {
-	bShowMouseCursor = false;
-	SetInputMode(FInputModeGameOnly());
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
 
-	if (validate(IsValid(HeroPicker)) == false) { return; }
-	HeroPicker->SetVisibility(ESlateVisibility::Hidden);
+	IngameHUD->DeactivateHeroPicker();
 }
-
 
 
 void AHeroPlayerController::HandleWinCondition(int WinningTeamIndex) {
-	WinningTeamIndex == TeamIndex ? ShowWinningDisplay() : ShowLosingDisplay();
-}
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
 
-
-void AHeroPlayerController::ShowWinningDisplay() {
-	if (validate(IsValid(WinningTeamMessageWidget)) == false) { return; }
-	UUserWidget* WinningDisplay = CreateWidget(this, WinningTeamMessageWidget);
-	if (validate(IsValid(WinningDisplay)) == false) { return; }
-	WinningDisplay->AddToViewport();
-}
-
-void AHeroPlayerController::ShowLosingDisplay() {
-	if (validate(IsValid(LosingTeamMessageWidget)) == false) { return; }
-	UUserWidget* LosingDisplay = CreateWidget(this, LosingTeamMessageWidget);
-	if (validate(IsValid(LosingDisplay)) == false) { return; }
-	LosingDisplay->AddToViewport();
+	WinningTeamIndex == TeamIndex ? IngameHUD->ShowWinningDisplay() : IngameHUD->ShowLosingDisplay();
 }

@@ -38,10 +38,7 @@ bool UMainMenu::Initialize() {
 	if (validate(IsValid(QuitButton)) == false) { return false; }
 	QuitButton->OnClicked.AddDynamic(this, &UMainMenu::QuitGame);
 
-	UMultiplayerGameInstance* GameInstance = Cast<UMultiplayerGameInstance>(GetGameInstance());
-	if (validate(IsValid(GameInstance)) == false) { return false; }
-	if (validate(IsValid(RefreshServerListButton)) == false) { return false; }
-	RefreshServerListButton->OnClicked.AddDynamic(GameInstance, &UMultiplayerGameInstance::FindSessions);
+	RefreshServerListButton->OnClicked.AddDynamic(this, &UMainMenu::FindSessions);
 
 	return true;
 }
@@ -56,9 +53,15 @@ void UMainMenu::HostServer() {
 	FCustomServerSettings ServerSettings;
 	ServerSettings.ServerName = ServerNameTextBox->GetText().ToString();
 	ServerSettings.Password = PasswordTextBox->GetText().ToString();
-	ServerSettings.MaxPlayerCount = (int)PlayerCountSpinBox->GetValue();
+	ServerSettings.MaxPlayerCount = (int) PlayerCountSpinBox->GetValue();
 
 	MenuInterface->Host(ServerSettings);
+}
+
+
+void UMainMenu::FindSessions() {
+	if (validate(MenuInterface != nullptr) == false) { return; }
+	MenuInterface->FindSessions();
 }
 
 
@@ -82,9 +85,7 @@ void UMainMenu::EnterJoinMenu() {
 	if (validate(IsValid(JoinMenu)) == false) { return; }
 	MenuSwitcher->SetActiveWidget(JoinMenu);
 
-	UMultiplayerGameInstance* GameInstance = Cast<UMultiplayerGameInstance>(GetGameInstance());
-	if (validate(IsValid(GameInstance)) == false) { return; }
-	GameInstance->FindSessions();
+	MenuInterface->FindSessions();
 }
 
 

@@ -36,7 +36,7 @@ public:
 	void SelectServer(UServerInfo* ServerInfo);
 
 	UFUNCTION()
-		void JoinSelectedServerListSession();
+	void JoinSelectedServerListSession();
 
 protected:
 
@@ -113,6 +113,9 @@ protected:
 
 	UFUNCTION()
 	void QuitGame();
+
+	UFUNCTION()
+	void FindSessions();
 
 	IMenuInterface* MenuInterface;
 

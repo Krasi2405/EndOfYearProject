@@ -22,7 +22,7 @@ void UChatBox::SendMessage() {
 	if (Message == "") { return; }
 	AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(GetOwningPlayer());
 	if (validate(IsValid(PlayerController)) == false) { return; }
-	PlayerController->SendMessageRequest(Message);
+	PlayerController->ServerSendMessageRequest(Message);
 	MessageBox->SetText(FText::FromString(""));
 }
 
