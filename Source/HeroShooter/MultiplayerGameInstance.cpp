@@ -1,8 +1,15 @@
 
 #include "MultiplayerGameInstance.h"
-#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "OnlineSessionSettings.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
+#include "GameModes/HeroShooterGameState.h"
+#include "Containers/UnrealString.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+
 
 #include "UI/MainMenu.h"
 #include "UI/ServerInfo.h"
@@ -17,19 +24,195 @@ const static FName SERVER_SETTINGS_NAME_KEY = TEXT("ServerName");
 const static FName SERVER_SETTINGS_PASSWORD_KEY = TEXT("ServerPassword");
 
 
+const static FString USER_STATS_FILENAME = "USERSTATS";
+
 
 void UMultiplayerGameInstance::Init() {
 	OnlineSubsystem = IOnlineSubsystem::Get();
 	if (validate(OnlineSubsystem != nullptr) == false) { return; };
 	UE_LOG(LogTemp, Warning, TEXT("Using subsystem: %s"), *OnlineSubsystem->GetSubsystemName().ToString());
+
+
 	SessionInterface = OnlineSubsystem->GetSessionInterface();
 	if (validate(SessionInterface != nullptr) == false) { return; }
 	SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnCreateSession);
 	SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnDestroySession);
 	SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnFindSessionsComplete);
 	SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnJoinSessionComplete);
+
+	UserCloudInterface = OnlineSubsystem->GetUserCloudInterface();
+	if (validate(UserCloudInterface != nullptr) == false) { return; }
+	UserCloudInterface->OnReadUserFileCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnReadUserFileComplete);
+	UserCloudInterface->OnWriteUserFileCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnWriteUserFileComplete);
 }
 
+
+
+void UMultiplayerGameInstance::RequestUserInfo(const TSharedPtr<const FUniqueNetId> NetId) {
+	ReadUserFile(NetId, USER_STATS_FILENAME);
+}
+
+void UMultiplayerGameInstance::UpdateUserInfo(const TSharedPtr<const FUniqueNetId> NetId, FUserInfo UserInfo) {
+	FString Json = UserInfoToJSON(UserInfo);
+	WriteUserFile(NetId, USER_STATS_FILENAME, Json);
+}
+
+
+void UMultiplayerGameInstance::UpdateLocalUserInfo(int Rating, int Wins, int Losses) {
+	FUserInfo UserInfo;
+	UserInfo.Rating = Rating;
+	UserInfo.Wins = Wins;
+	UserInfo.Losses = Losses;
+
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (validate(IsValid(PlayerController)) == false) { return; }
+
+	APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+
+	UpdateUserInfo(GetUniqueID(PlayerState), UserInfo);
+}
+
+void UMultiplayerGameInstance::ReadUserFile(const TSharedPtr<const FUniqueNetId> NetId, const FString& Filename) {
+	if (validate(UserCloudInterface != nullptr) == false) { return; }
+	if (validate(NetId.IsValid()) == false) { return; }
+	UserCloudInterface->ReadUserFile(NetId.ToSharedRef().Get(), Filename);
+}
+
+
+void UMultiplayerGameInstance::OnReadUserFileComplete(bool bSuccess, const FUniqueNetId& UserOwner, const FString& Filename) {
+	if (validate(bSuccess) == false) {
+		UE_LOG(LogTemp, Error, TEXT("Reading user file failed for %s"), *UserOwner.ToString());
+		return;
+	}
+
+	if (validate(UserCloudInterface != nullptr) == false) { return; }
+
+	TArray<uint8> Bytes = TArray<uint8>();
+	bool bReadSuccess = UserCloudInterface->GetFileContents(UserOwner, Filename, Bytes);
+	if (validate(bReadSuccess) == false) { return; }
+
+	uint8* BytesPtr = Bytes.GetData();
+	FString Contents = BytesToString(BytesPtr, Bytes.Num());
+	
+	UE_LOG(LogTemp, Warning, TEXT("Read from cloud: %s"), *Contents);
+
+	if (Filename == USER_STATS_FILENAME) {
+		FUserInfo UserInfo = JSONToUserInfo(Contents);
+		OnUserInfoRequestCompleted.Broadcast(UserOwner, UserInfo);
+	}
+	else
+	{
+		validate(false);
+	}
+}
+
+
+void UMultiplayerGameInstance::WriteUserFile(const TSharedPtr<const FUniqueNetId> NetId, const FString& Filename, FString Contents) {
+	if (validate(UserCloudInterface != nullptr) == false) { return; }
+	if (validate(NetId.IsValid()) == false) { return; }
+
+	int BufferSize = Contents.Len();
+	uint8* ByteArray = reinterpret_cast<uint8*>(FMemory::Malloc(BufferSize));
+	int NumberOfBytesCopied = StringToBytes(Contents, ByteArray, BufferSize);
+
+	TArray<uint8> FileContents = TArray<uint8>();
+	for (int i = 0; i < BufferSize; i++) {
+		FileContents.Add(ByteArray[i]);
+	}
+
+	UserCloudInterface->WriteUserFile(NetId.ToSharedRef().Get(), Filename, FileContents);
+}
+
+
+void UMultiplayerGameInstance::OnWriteUserFileComplete(bool bSuccess, const FUniqueNetId& UserOwner, const FString& Filename) {
+	if (validate(bSuccess) == false) { 
+		UE_LOG(LogTemp, Error, TEXT("Write to user file %s failed for %s"), *Filename, *UserOwner.ToString());
+		return;
+	}
+}
+
+
+void UMultiplayerGameInstance::WriteToFileTest(FString Contents) {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (validate(IsValid(PlayerController)) == false) { return; }
+
+	APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+
+	WriteUserFile(GetUniqueID(PlayerState), USER_STATS_FILENAME, Contents);
+}
+
+
+void UMultiplayerGameInstance::PrintUserFile() {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (validate(IsValid(PlayerController)) == false) { return; }
+
+	APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+	const TSharedPtr<const FUniqueNetId> NetId = GetUniqueID(PlayerState);
+	if (validate(NetId != nullptr) == false) { return; }
+	ReadUserFile(NetId, USER_STATS_FILENAME);
+}
+
+
+FString UMultiplayerGameInstance::UserInfoToJSON(FUserInfo UserInfo) {
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetNumberField("Rating", UserInfo.Rating);
+	JsonObject->SetNumberField("Wins", UserInfo.Wins);
+	JsonObject->SetNumberField("Losses", UserInfo.Losses);
+	
+	FString OutJson;
+	TSharedRef<TJsonWriter<>> JsonWriter = TJsonWriterFactory<>::Create(&OutJson);
+	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
+	
+	return OutJson;
+}
+
+
+FUserInfo UMultiplayerGameInstance::JSONToUserInfo(FString JSON) {
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JSON);
+	FJsonSerializer::Deserialize(JsonReader, JsonObject);
+
+	FUserInfo UserInfo;
+	UserInfo.Rating = JsonObject->GetIntegerField("Rating");
+	UserInfo.Wins = JsonObject->GetIntegerField("Wins");
+	UserInfo.Losses = JsonObject->GetIntegerField("Losses");
+	
+	return UserInfo;
+}
+
+
+const TSharedPtr<const FUniqueNetId> UMultiplayerGameInstance::GetUniqueID(APlayerState* PlayerState) {
+	if (validate(IsValid(PlayerState)) == false) { return nullptr; }
+	return PlayerState->UniqueId.GetUniqueNetId();
+}
+
+
+void UMultiplayerGameInstance::PrintLocalUniqueID() {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (validate(IsValid(PlayerController)) == false) { return; }
+
+	APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+	const TSharedPtr<const FUniqueNetId> NetId = GetUniqueID(PlayerState);
+	if (validate(NetId.IsValid()) == false) { return; }
+	UE_LOG(LogTemp, Warning, TEXT("Local Controller Unique Id: %s"), *NetId->ToString());
+}
 
 
 void UMultiplayerGameInstance::OnCreateSession(FName SessionName, bool bSuccessfull) {

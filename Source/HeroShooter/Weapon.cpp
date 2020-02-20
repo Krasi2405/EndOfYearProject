@@ -42,15 +42,13 @@ void AWeapon::PreFire() {
 	if (CurrentAmmo <= 0) {
 		OnOutOfAmmo.Broadcast();
 		ReleaseTrigger();
-		// TODO: Out of ammo sound.
 		return;
 	}
-	// TODO: Screen shake, flash, sound, etc.
 	if (HasAuthority() == false) {
 		CurrentAmmo--; // ServerFire will take care of ammo if player is server as well.
 	}
-	Fire();
 
+	Fire();
 	ServerFire(GetAimingReticleDirection());
 }
 

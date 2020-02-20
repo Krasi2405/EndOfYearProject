@@ -10,6 +10,8 @@ public class HeroShooter : ModuleRules
 
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
 
+        PrivateDependencyModuleNames.AddRange(new string[] { "Json" });
+
         PrivateDependencyModuleNames.AddRange(new string[] { "OnlineSubsystem", "OnlineSubsystemSteam" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

@@ -25,9 +25,6 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 	ABaseCharacter* Owner = Cast<ABaseCharacter>(GetOwner());
 	if (validate(IsValid(Owner)) == false) { return; }
 
-	APlayerController* PlayerController = Cast<APlayerController>(Owner->GetController());
-	if (validate(IsValid(PlayerController)) == false) { return; }
-
 
 	FVector Start = GetActorLocation() + FiringPoint;
 	FVector End = Start + Direction * MaxRange;
