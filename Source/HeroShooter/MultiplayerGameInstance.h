@@ -8,6 +8,7 @@
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Interfaces/OnlineUserCloudInterface.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "MultiplayerGameInstance.generated.h"
 
 class UMainMenu;
@@ -17,6 +18,8 @@ class APlayerState;
 USTRUCT()
 struct FUserInfo {
 	GENERATED_BODY()
+
+	FString Username;
 
 	UPROPERTY()
 	int Rating;
@@ -56,7 +59,7 @@ protected:
 
 	IOnlineSubsystem* OnlineSubsystem;
 
-	
+	IOnlineIdentityPtr OnlineIdentityInterface;
 
 
 /* ----------------------

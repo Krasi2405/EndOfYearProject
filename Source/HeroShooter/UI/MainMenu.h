@@ -11,7 +11,6 @@
 
 class UButton;
 class UWidgetSwitcher;
-class UEditableTextBox;
 class UScrollBox;
 class UServerInfo;
 class UEditableTextBox;

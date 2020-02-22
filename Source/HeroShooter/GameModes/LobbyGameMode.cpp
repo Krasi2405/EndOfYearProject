@@ -23,6 +23,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer) {
 void ALobbyGameMode::TravelToGame() {
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
+	if (validate(GameMapPaths.Num() > 0) == false) { return; }
 
 	FString MapPath = GameMapPaths[FMath::RandRange(0, GameMapPaths.Num() - 1)];
 	World->ServerTravel(MapPath + "?listen", true);

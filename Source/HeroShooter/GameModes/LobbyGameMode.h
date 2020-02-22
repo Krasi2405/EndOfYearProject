@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class HEROSHOOTER_API ALobbyGameMode : public AGameMode
+class HEROSHOOTER_API ALobbyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 

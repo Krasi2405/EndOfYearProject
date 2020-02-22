@@ -10,7 +10,6 @@
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
 
-
 #include "UI/MainMenu.h"
 #include "UI/ServerInfo.h"
 #include "CustomMacros.h"
@@ -44,6 +43,9 @@ void UMultiplayerGameInstance::Init() {
 	if (validate(UserCloudInterface != nullptr) == false) { return; }
 	UserCloudInterface->OnReadUserFileCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnReadUserFileComplete);
 	UserCloudInterface->OnWriteUserFileCompleteDelegates.AddUObject(this, &UMultiplayerGameInstance::OnWriteUserFileComplete);
+
+	OnlineIdentityInterface = OnlineSubsystem->GetIdentityInterface();
+	if (validate(OnlineIdentityInterface != nullptr) == false) { return; }
 }
 
 
@@ -103,6 +105,9 @@ void UMultiplayerGameInstance::OnReadUserFileComplete(bool bSuccess, const FUniq
 
 	if (Filename == USER_STATS_FILENAME) {
 		FUserInfo UserInfo = JSONToUserInfo(Contents);
+
+		UserInfo.Username = OnlineIdentityInterface->GetPlayerNickname(UserOwner);;
+
 		OnUserInfoRequestCompleted.Broadcast(UserOwner, UserInfo);
 	}
 	else

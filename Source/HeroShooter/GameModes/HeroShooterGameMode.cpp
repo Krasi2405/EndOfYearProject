@@ -12,6 +12,8 @@
 #include "HeroSpawner.h"
 #include "CustomMacros.h"
 #include "HeroPlayerState.h"
+#include "MultiplayerGameInstance.h"
+#include "GameFramework/GameSession.h"
 
 
 AHeroShooterGameMode::AHeroShooterGameMode() {
@@ -58,7 +60,36 @@ void AHeroShooterGameMode::Logout(AController* Exiting) {
 void AHeroShooterGameMode::BeginPlay() {
 	Super::BeginPlay();
 
-	
+
+	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
+	if (validate(IsValid(GameInstance)) == false) { return; }
+	GameInstance->OnUserInfoRequestCompleted.AddUObject(this, &AHeroShooterGameMode::OnGameOverUpdateUserInfo);
+}
+
+void AHeroShooterGameMode::OnGameOverUpdateUserInfo(const FUniqueNetId& NetId, FUserInfo UserInfo) {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(GetPlayerControllerFromNetId(World, NetId));
+	if (validate(IsValid(PlayerController)) == false) { return; }
+	if (validate(WinningTeamIndex.IsSet()) == false) { return; }
+
+	PlayerController->GetTeamIndex() == WinningTeamIndex.GetValue() ? UserInfo.Wins++ : UserInfo.Losses++;
+	UserInfo.Rating += GetDeltaRating(PlayerController);
+
+
+	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
+	if (validate(IsValid(GameInstance)) == false) { return; }
+
+	GameInstance->UpdateUserInfo(
+		PlayerController->GetPlayerState<APlayerState>()->UniqueId.GetUniqueNetId(), UserInfo);
+}
+
+int AHeroShooterGameMode::GetDeltaRating(AHeroPlayerController* PlayerController) {
+	// TODO: calculate based on enemy and player rating.
+	if (validate(WinningTeamIndex.IsSet()) == false) { return 0; }
+
+	return PlayerController->GetTeamIndex() == WinningTeamIndex.GetValue() ? BaseDeltaRating : -BaseDeltaRating;
 }
 
 void AHeroShooterGameMode::InitGameState() {
@@ -107,9 +138,19 @@ int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
 
 
 void AHeroShooterGameMode::TeamWin(int TeamIndex) {
+	WinningTeamIndex = TeamIndex;
+
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return; }
 	GameState->NetMulticastSendWinningTeam(TeamIndex);
+
+	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
+	if (validate(IsValid(GameInstance)) == false) { return; }
+
+	for (APlayerState* PlayerState : GameState->PlayerArray) {
+		TSharedPtr<const FUniqueNetId> NetId = GameInstance->GetUniqueID(PlayerState);
+		GameInstance->RequestUserInfo(NetId);
+	}
 
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
@@ -119,7 +160,6 @@ void AHeroShooterGameMode::TeamWin(int TeamIndex) {
 		GameEndTimeSeconds,
 		false
 	);
-
 }
 
 

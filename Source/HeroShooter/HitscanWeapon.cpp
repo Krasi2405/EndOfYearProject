@@ -43,10 +43,10 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 
 	TArray<FHitResult> OutHits;
 	World->LineTraceMultiByChannel(
-		OutHits,
+		OutHits, 
 		Start,
 		End,
-		ECollisionChannel::ECC_GameTraceChannel1,
+		ECollisionChannel::ECC_GameTraceChannel1, // Custom WeaponTrace channel
 		QueryParams
 	);
 

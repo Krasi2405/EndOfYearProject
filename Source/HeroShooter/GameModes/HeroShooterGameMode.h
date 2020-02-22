@@ -36,6 +36,8 @@ protected:
 	UFUNCTION(Exec)
 	void TeamWin(int TeamIndex);
 
+	TOptional<int> WinningTeamIndex;
+
 	UPROPERTY(EditDefaultsOnly, meta=(Tooltip="Time to wait after win condition before switching map"))
 	int GameEndTimeSeconds = 10;
 
@@ -50,6 +52,8 @@ protected:
 
 	virtual void InitGameState() override;
 
+	void OnGameOverUpdateUserInfo(const FUniqueNetId& NetId, struct FUserInfo UserInfo);
+
 	void TravelToMapInMapPool();
 
 	TArray<TArray<AHeroPlayerController*>*> Teams = TArray<TArray<AHeroPlayerController*>*>();
@@ -58,4 +62,8 @@ protected:
 
 	UFUNCTION(Exec)
 	void ChangePlayerTeam(int TeamIndex, int PlayerIndex, int NewTeam);
+
+	virtual int GetDeltaRating(AHeroPlayerController* PlayerController);
+
+	int BaseDeltaRating = 20;
 };
