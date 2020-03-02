@@ -19,8 +19,9 @@ class HEROSHOOTER_API ADeathmatchGameState : public AHeroShooterGameState
 	
 public:
 
-
 	void AddKill(int Team);
+
+	void RemoveKill(int Team);
 
 	int GetKillCount(int Team);
 

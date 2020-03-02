@@ -106,7 +106,7 @@ void UMultiplayerGameInstance::OnReadUserFileComplete(bool bSuccess, const FUniq
 	if (Filename == USER_STATS_FILENAME) {
 		FUserInfo UserInfo = JSONToUserInfo(Contents);
 
-		UserInfo.Username = OnlineIdentityInterface->GetPlayerNickname(UserOwner);;
+		UserInfo.Username = OnlineIdentityInterface->GetPlayerNickname(UserOwner);
 
 		OnUserInfoRequestCompleted.Broadcast(UserOwner, UserInfo);
 	}
@@ -204,6 +204,15 @@ const TSharedPtr<const FUniqueNetId> UMultiplayerGameInstance::GetUniqueID(APlay
 	return PlayerState->UniqueId.GetUniqueNetId();
 }
 
+
+FString UMultiplayerGameInstance::GetPlayerUsername(APlayerState* PlayerState) {
+	const TSharedPtr<const FUniqueNetId> UniqueIdPtr = GetUniqueID(PlayerState);
+	if (validate(UniqueIdPtr.IsValid() == false)) { return PlayerState->GetPlayerName(); }
+	const FUniqueNetId& UserOwner = UniqueIdPtr.ToSharedRef().Get();
+
+	if (validate(OnlineIdentityInterface != nullptr) == false) { return PlayerState->GetPlayerName(); }
+	return OnlineIdentityInterface->GetPlayerNickname(UserOwner);
+}
 
 void UMultiplayerGameInstance::PrintLocalUniqueID() {
 	UWorld* World = GetWorld();

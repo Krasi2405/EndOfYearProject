@@ -16,6 +16,6 @@ class HEROSHOOTER_API ADeathmatchGameMode : public AHeroShooterGameMode
 	
 public:
 
-	virtual void HandleDeath(AHeroPlayerController* PlayerController) override;
+	virtual void HandleDeath(AHeroPlayerController* PlayerController, AHeroPlayerController* Killer) override;
 
 };

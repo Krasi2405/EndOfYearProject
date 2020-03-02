@@ -3,6 +3,8 @@
 
 #include "HealthComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 #include "CustomMacros.h"
 
 
@@ -25,7 +27,7 @@ void UHealthComponent::BeginPlay() {
 	validate(MaxHealth > 0);
 }
 
-void UHealthComponent::TakeDamage(float Damage) {
+void UHealthComponent::TakeDamage(float Damage, APlayerController* LastDamagedByPlayer) {
 	if (bDead) { return; }
 
 	Health -= Damage;
@@ -35,6 +37,25 @@ void UHealthComponent::TakeDamage(float Damage) {
 		OnDeath.Broadcast();
 	}
 	OnHealthChanged.Broadcast(Health);
+
+	this->LastDamagedByPlayer = LastDamagedByPlayer;
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	FTimerManager& TimerManager = World->GetTimerManager();
+	TimerManager.SetTimer(
+		LastDamagedByTimerHandle,					// Handle associated with timer
+		this,										// Object to call the method on
+		&UHealthComponent::ClearLastDamagedBy,		// call method after timer expires
+		LastDamagedByExpireTime,					// Time to wait before calling the method.
+		false										// don't loop
+	);
+}
+
+
+void UHealthComponent::ClearLastDamagedBy() {
+	LastDamagedByPlayer = nullptr;
 }
 
 
@@ -49,17 +70,25 @@ void UHealthComponent::Heal(float HealingPower) {
 }
 
 
+APlayerController* UHealthComponent::GetLastDamagedBy() {
+	return LastDamagedByPlayer;
+}
+
+
 float UHealthComponent::GetHealth() {
 	return Health;
 }
+
 
 float UHealthComponent::GetMaxHealth() {
 	return MaxHealth;
 }
 
+
 void UHealthComponent::OnRep_Health() {
 	OnHealthChanged.Broadcast(Health);
 }
+
 
 void UHealthComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

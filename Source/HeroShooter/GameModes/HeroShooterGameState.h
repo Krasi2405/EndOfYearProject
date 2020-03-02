@@ -17,7 +17,7 @@ class UGameModeInfoWidget;
  * 
  */
 UCLASS()
-class HEROSHOOTER_API AHeroShooterGameState : public AGameStateBase
+class HEROSHOOTER_API AHeroShooterGameState : public AGameState
 {
 	GENERATED_BODY()
 

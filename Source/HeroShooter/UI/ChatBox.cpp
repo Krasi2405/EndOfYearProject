@@ -52,6 +52,7 @@ void UChatBox::OnTextCommited(const FText& Text, ETextCommit::Type CommitMethod)
 	if (CommitMethod == ETextCommit::OnEnter) {
 		SendMessage();
 		Close();
+
 		APlayerController* Owner = GetOwningPlayer();
 		if (validate(IsValid(Owner)) == false) { return; }
 		Owner->SetInputMode(FInputModeGameOnly());

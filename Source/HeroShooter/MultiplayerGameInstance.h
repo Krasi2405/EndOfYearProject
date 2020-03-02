@@ -53,6 +53,8 @@ public:
 	UFUNCTION(Exec)
 	void PrintLocalUniqueID();
 
+	FString GetPlayerUsername(APlayerState* PlayerState);
+
 protected:
 
 	virtual void Init() override;

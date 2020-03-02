@@ -60,9 +60,10 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 
 		ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
 		if (IsValid(Character) == false) { return; }
-		AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(Character->GetController());
-		if (IsValid(OwnerController) && OwnerController->GetTeamIndex() == TeamIndex) { continue; }
-		HealthComponent->TakeDamage((float) Damage);
+		AHeroPlayerController* OtherController = Cast<AHeroPlayerController>(Character->GetController());
+		if (IsValid(OtherController) && OtherController->GetTeamIndex() == TeamIndex) { continue; }
+
+		HealthComponent->TakeDamage((float) Damage, OwnerController);
 		return;
 	}
 }

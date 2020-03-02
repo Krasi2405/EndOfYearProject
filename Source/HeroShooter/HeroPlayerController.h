@@ -29,7 +29,7 @@ public:
 	void ServerSendMessageRequest(const FString& Message);
 
 	UFUNCTION(Client, Reliable)
-	void ClientReceiveMessage(const FString& PlayerName, const FString& Message);
+	void ClientReceiveMessage(APlayerState* SendingPlayer, const FString& Message);
 
 	void SetTeamIndex(int NewTeamIndex);
 
@@ -84,7 +84,7 @@ protected:
 
 	void ServerSendMessageRequest_Implementation(const FString& Message);
 
-	void ClientReceiveMessage_Implementation(const FString& PlayerName, const FString& Message);
+	void ClientReceiveMessage_Implementation(APlayerState* SendingPlayer, const FString& Message);
 
 
 	void ToggleIngameMenu();

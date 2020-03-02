@@ -11,9 +11,9 @@ void UDeathmatchInfoWidget::Setup(AHeroShooterGameState* GameState) {
 	if (validate(IsValid(DeathmatchGameState)) == false) { return; }
 	if (validate(DeathmatchGameState->GetTeamCount() == 2) == false) { return; }
 
-
 	if (validate(IsValid(TeamScoreOne)) == false) { return; }
 	if (validate(IsValid(TeamScoreTwo)) == false) { return; }
+
 	TeamScoreOne->Setup(DeathmatchGameState->GetVictoryScore());
 	TeamScoreTwo->Setup(DeathmatchGameState->GetVictoryScore());
 
@@ -21,8 +21,6 @@ void UDeathmatchInfoWidget::Setup(AHeroShooterGameState* GameState) {
 }
 
 void UDeathmatchInfoWidget::UpdateKillCount() {
-	UE_LOG(LogTemp, Warning, TEXT("UpdateKillCount"))
-
 	if (validate(IsValid(DeathmatchGameState)) == false) { return; }
 	UpdateScore(0, DeathmatchGameState->GetKillCount(0));
 	UpdateScore(1, DeathmatchGameState->GetKillCount(1));

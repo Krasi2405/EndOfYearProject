@@ -62,7 +62,8 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (IsValid(HealthComponent)) {
-			HealthComponent->TakeDamage(Damage);
+			AHeroPlayerController* HeroController = Cast<AHeroPlayerController>(GetInstigatorController());
+			HealthComponent->TakeDamage(Damage, HeroController);
 		}
 	}
 

@@ -19,10 +19,15 @@ void ADeathmatchGameState::AddKill(int Team) {
 	if (validate(Kills.Num() > Team) == false) { return; }
 	Kills[Team] += 1;
 
-	UE_LOG(LogTemp, Warning, TEXT("AddKill"))
 	OnKillCountUpdated.Broadcast();
+}
 
-	UE_LOG(LogTemp, Warning, TEXT("Team %d now has %d kills!"), Team, Kills[Team]);
+
+void ADeathmatchGameState::RemoveKill(int Team) {
+	if (validate(Kills.Num() > Team) == false) { return; }
+	Kills[Team] -= 1;
+
+	OnKillCountUpdated.Broadcast();
 }
 
 
@@ -37,8 +42,6 @@ int ADeathmatchGameState::GetVictoryScore() {
 }
 
 void ADeathmatchGameState::Rep_KillsUpdated() {
-
-	UE_LOG(LogTemp, Warning, TEXT("Rep_KillsUpdated"))
 	OnKillCountUpdated.Broadcast();
 }
 

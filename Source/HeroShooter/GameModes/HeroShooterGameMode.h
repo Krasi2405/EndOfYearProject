@@ -13,7 +13,7 @@ class UDataTable;
  * 
  */
 UCLASS()
-class HEROSHOOTER_API AHeroShooterGameMode : public AGameModeBase
+class HEROSHOOTER_API AHeroShooterGameMode : public AGameMode
 {
 	GENERATED_BODY()
 
@@ -23,7 +23,7 @@ public:
 
 	TArray<AHeroPlayerController*> GetTeamPlayerList(int TeamIndex);
 
-	virtual void HandleDeath(AHeroPlayerController* PlayerController);
+	virtual void HandleDeath(AHeroPlayerController* PlayerController, AHeroPlayerController* Killer);
 
 protected:
 

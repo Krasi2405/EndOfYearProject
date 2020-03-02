@@ -25,6 +25,7 @@
 #include "GameModes/HeroShooterGameMode.h"
 #include "GameModes/HeroShooterGameState.h"
 #include "GameModes/GameModeInfoWidget.h"
+#include "MultiplayerGameInstance.h"
 
 
 AHeroPlayerController::AHeroPlayerController() {
@@ -60,10 +61,6 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 
 	HealthComponent->OnHealthChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateHealthbar);
 	Weapon->OnAmmoChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateAmmoBar);
-	// TODO: Respawn timer.
-
-
-
 
 	DeactivateHeroPicker();
 }
@@ -90,9 +87,18 @@ void AHeroPlayerController::ServerHandleDeath() {
 
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
+
 	AHeroShooterGameMode* GameMode = Cast<AHeroShooterGameMode>(World->GetAuthGameMode());
 	if (validate(IsValid(GameMode)) == false) { return; }
-	GameMode->HandleDeath(this);
+
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	if (validate(IsValid(BaseCharacter)) == false) { return; }
+	UHealthComponent* HealthComponent = BaseCharacter->FindComponentByClass<UHealthComponent>();
+	if (validate(IsValid(HealthComponent)) == false) { return; }
+
+	AHeroPlayerController* KillerHeroController = Cast<AHeroPlayerController>(HealthComponent->GetLastDamagedBy());
+
+	GameMode->HandleDeath(this, KillerHeroController);
 
 	// TODO: Wait a bit and respawn player
 }
@@ -149,7 +155,8 @@ void AHeroPlayerController::ServerSendMessageRequest_Implementation(const FStrin
 	if (validate(IsValid(World)) == false) { return; }
 	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
 
-	FString PlayerName = GetName();
+	APlayerState* SendingPlayer = GetPlayerState<APlayerState>();
+	if (validate(IsValid(SendingPlayer)) == false) { return; }
 
 	if (validate(IsValid(GameState)) == false) { return; }
 	TArray<APlayerState*>& PlayerStates = GameState->PlayerArray;
@@ -159,16 +166,19 @@ void AHeroPlayerController::ServerSendMessageRequest_Implementation(const FStrin
 		AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(PlayerState->GetOwner());
 		if (validate(IsValid(PlayerController)) == false) { continue; }
 		
-		
-		PlayerController->ClientReceiveMessage(PlayerName, Message);
+		PlayerController->ClientReceiveMessage(SendingPlayer, Message);
 	}
 }
 
 
-void AHeroPlayerController::ClientReceiveMessage_Implementation(const FString& PlayerName, const FString& Message) {
+void AHeroPlayerController::ClientReceiveMessage_Implementation(APlayerState* SendingPlayer, const FString& Message) {
 	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
+	UMultiplayerGameInstance* GameInstance = Cast<UMultiplayerGameInstance>(GetGameInstance());
+	if (validate(IsValid(GameInstance)) == false) { return; }
+
+	FString PlayerName = GameInstance->GetPlayerUsername(SendingPlayer);
 	IngameHUD->AddChatMessage(PlayerName, Message);
 }
 

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "GameModes/InfoWidgetInterface.h"
 #include "GameModeInfoWidget.generated.h"
 
 class AHeroShooterGameState;
