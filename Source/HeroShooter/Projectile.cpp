@@ -37,9 +37,9 @@ void AProjectile::BeginPlay()
 		AActor* Owner = GetOwner();
 		if (validate(IsValid(Owner)) == false) { return; }
 
-		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::AProjectile::OnOverlapBegin);
+		SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnOverlapBegin);
+		SphereComponent->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 		SphereComponent->IgnoreActorWhenMoving(Owner, true);
-		SphereComponent->IgnoreActorWhenMoving(this, true);
 	}
 }
 
@@ -56,9 +56,6 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 			if (OwnerController->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
 			// TODO: Actually fix using proper projectile collision channel.
 		}
-		
-		AProjectile* Projectile = Cast<AProjectile>(OtherActor);
-		if (IsValid(Projectile)) { return; }
 
 		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (IsValid(HealthComponent)) {
@@ -70,6 +67,16 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	Destroy();
 }
 
+
+void AProjectile::OnHit(
+	UPrimitiveComponent* HitComponent,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse,
+	const FHitResult& Hit) 
+{
+	Destroy();
+}
 
 void AProjectile::SetTeamIndex(int Index) {
 	TeamIndex = Index;
