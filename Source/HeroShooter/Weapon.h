@@ -7,7 +7,15 @@
 #include "Weapon.generated.h"
 
 
-DECLARE_MULTICAST_DELEGATE(FOutOfAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOutOfAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAmmoChanged, int, Ammo);
+
+class UParticleSystem;
+class UParticleSystemComponent;
+class USceneComponent;
+class UAudioComponent;
+class AIngameHUD;
+
 
 UCLASS(Abstract)
 class HEROSHOOTER_API AWeapon : public AActor
@@ -29,17 +37,26 @@ public:
 	UFUNCTION()
 	virtual void Reload();
 
+	int GetMaxAmmo();
+
+	int GetCurrentAmmo();
+
+	FOnAmmoChanged OnAmmoChanged;
+
+	FOutOfAmmo OnOutOfAmmo;
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	FTransform GetFiringPointGlobalTransform();
+
 	UFUNCTION()
 	void PreFire();
 
-	
 	UFUNCTION(meta=(ToolTip="Locally simulate firing."))
-	virtual void Fire();
+	virtual void LocalFire();
 
 	// Sent from original client to server.
 	UFUNCTION(Server, Reliable)
@@ -50,8 +67,25 @@ protected:
 
 	FVector GetAimingReticleDirection();
 
-	UPROPERTY(EditDefaultsOnly, Meta = (MakeEditWidget = true))
-	FVector FiringPoint;
+	AIngameHUD* IngameHUD;
+
+	UPROPERTY(VisibleDefaultsOnly)
+	USceneComponent* FiringPoint;
+
+	UPROPERTY(EditDefaultsOnly)
+	UParticleSystem* FireParticleSystemTemplate;
+
+	UPROPERTY(VisibleDefaultsOnly)
+	UParticleSystemComponent* FireParticleSystemComponent;
+
+	UPROPERTY(VisibleDefaultsOnly)
+	UAudioComponent* FireAudioComponent;
+
+	UPROPERTY(VisibleDefaultsOnly)
+	UAudioComponent* ReloadAudioComponent;
+
+	UPROPERTY(VisibleDefaultsOnly)
+	UAudioComponent* OutOfAmmoAudioComponent;
 
 	UPROPERTY(EditDefaultsOnly)
 	bool bHasMesh = true; 
@@ -66,8 +100,6 @@ protected:
 	int CurrentAmmo = 30;
 
 	FTimerHandle TriggerTimerHandle;
-
-	FOutOfAmmo OnOutOfAmmo;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

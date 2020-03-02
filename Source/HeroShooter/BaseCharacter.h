@@ -9,6 +9,9 @@
 
 class AWeapon;
 class UHealthComponent;
+class UHeroAnimInstance;
+class UWidgetComponent;
+class UHealthbar;
 
 UCLASS()
 class HEROSHOOTER_API ABaseCharacter : public ACharacter
@@ -18,6 +21,10 @@ class HEROSHOOTER_API ABaseCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ABaseCharacter();
+
+	AWeapon* GetEquippedWeapon();
+
+	void HideHead();
 
 protected:
 	// Called when the game starts or when spawned
@@ -32,6 +39,48 @@ protected:
 
 	virtual void Destroyed() override;
 
+	UFUNCTION()
+	void AttemptReload();
+
+	// Send reload command to server 
+	UFUNCTION(Server, Reliable)
+	void ServerReload();
+
+	void ServerReload_Implementation();
+
+	// Simulate animation in other clients.
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastReload();
+
+	void NetMulticastReload_Implementation();
+
+	UFUNCTION()
+	void CancelReload();
+
+	// Cancel reload command to server 
+	UFUNCTION(Server, Reliable)
+	void ServerCancelReload();
+
+	void ServerCancelReload_Implementation();
+
+	// Cancel reload animation in other clients.
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticastCancelReload();
+
+	void NetMulticastCancelReload_Implementation();
+
+	UFUNCTION(BlueprintCallable)
+	void SetHealthWidgetComponent(UWidgetComponent* HealthWidgetComponent);
+
+	UPROPERTY(VisibleDefaultsOnly)
+	UWidgetComponent* HealthbarWidgetComponent;
+
+	UPROPERTY()
+	UHealthbar* ExternalHealthbar;
+
+	UFUNCTION()
+	void UpdateExternalHealthbar(int NewHealth);
+
 	UPROPERTY(EditDefaultsOnly)
 	float MinControlPitch = -80.0f;
 	
@@ -45,8 +94,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AWeapon> StartingWeaponTemplate = nullptr;
 
-	UPROPERTY(Replicated, VisibleInstanceOnly)
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponSpawn, VisibleInstanceOnly)
 	AWeapon* Weapon = nullptr;
+
+	UFUNCTION()
+	void OnRep_WeaponSpawn();
 
 	void MoveForward(float Value);
 
@@ -62,4 +114,6 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UHealthComponent* HealthComponent;
 
+	UPROPERTY()
+	UHeroAnimInstance* HeroAnimInstance;
 };

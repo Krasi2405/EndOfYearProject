@@ -18,7 +18,7 @@ class HEROSHOOTER_API AProjectileWeapon : public AWeapon
 	GENERATED_BODY()
 
 protected:
-	virtual void Fire() override;
+	virtual void LocalFire() override;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AProjectile> ProjectileTemplate;

@@ -57,6 +57,9 @@ float UHealthComponent::GetMaxHealth() {
 	return MaxHealth;
 }
 
+void UHealthComponent::OnRep_Health() {
+	OnHealthChanged.Broadcast(Health);
+}
 
 void UHealthComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

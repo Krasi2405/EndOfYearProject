@@ -6,11 +6,14 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Math/UnrealMathUtility.h"
 #include "Components/SkeletalMeshComponent.h"
-
+#include "Components/WidgetComponent.h"
 #include "EngineGlobals.h"
 #include "Engine/Engine.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/KismetSystemLibrary.h"
 
+#include "UI/Healthbar.h"
+#include "HeroAnimInstance.h"
 #include "HealthComponent.h"
 #include "Weapon.h"
 #include "CustomMacros.h"
@@ -35,10 +38,16 @@ void ABaseCharacter::BeginPlay()
 	USkeletalMeshComponent* SkeletalMesh = GetMesh();
 	if (validate(IsValid(SkeletalMesh)) == false) { return; }
 
-	if (IsLocallyControlled()) {
-		SkeletalMesh->HideBoneByName(HeadBoneName, EPhysBodyOp::PBO_MAX);
-	}
+	HeroAnimInstance = Cast<UHeroAnimInstance>(SkeletalMesh->GetAnimInstance());
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 
+	if (validate(IsValid(HealthbarWidgetComponent)) == false) { return; }
+	ExternalHealthbar = Cast<UHealthbar>(HealthbarWidgetComponent->GetUserWidgetObject());
+	if (validate(IsValid(ExternalHealthbar)) == false) { return; }
+	if (validate(IsValid(HealthComponent)) == false) { return; }
+	ExternalHealthbar->Setup(HealthComponent->GetMaxHealth());
+	HealthComponent->OnHealthChanged.AddDynamic(this, &ABaseCharacter::UpdateExternalHealthbar);
+	
 	if (IsValid(StartingWeaponTemplate)) {
 		if (HasAuthority() == false) { return; }
 
@@ -52,6 +61,7 @@ void ABaseCharacter::BeginPlay()
 		Weapon = World->SpawnActor<AWeapon>(StartingWeaponTemplate, SpawnInfo);
 		if (validate(IsValid(Weapon)) == false) { return; }
 		Weapon->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "GunSocket");
+		HeroAnimInstance->OnReloadFinished.AddDynamic(Weapon, &AWeapon::Reload);
 	}
 	else
 	{
@@ -59,7 +69,7 @@ void ABaseCharacter::BeginPlay()
 	}
 }
 
-// Called every frame
+
 void ABaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -103,6 +113,63 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAxis("LookUp");
 	PlayerInputComponent->BindAxis("LookRight");
 
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABaseCharacter::AttemptReload);
+	PlayerInputComponent->BindAction("CancelReload", IE_Pressed, this, &ABaseCharacter::CancelReload);
+}
+
+
+void ABaseCharacter::OnRep_WeaponSpawn() {
+	if (IsValid(Weapon) == false) { return; }
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->OnReloadFinished.AddDynamic(Weapon, &AWeapon::Reload);
+}
+
+void ABaseCharacter::CancelReload() {
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->CancelReload();
+}
+
+void ABaseCharacter::AttemptReload() {
+	float ElapsedTime = UKismetSystemLibrary::GetGameTimeInSeconds(GetWorld());
+
+	UE_LOG(LogTemp, Warning, TEXT("Attempt reload %s on client at %f"), *GetName(), ElapsedTime);
+
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->StartReload();
+	ServerReload();
+}
+
+void ABaseCharacter::ServerReload_Implementation() {
+	float ElapsedTime = UKismetSystemLibrary::GetGameTimeInSeconds(GetWorld());
+
+
+	UE_LOG(LogTemp, Warning, TEXT("Receive reload %s on server at %f"), *GetName(), ElapsedTime);
+
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->StartReload();
+
+	NetMulticastReload();
+}
+
+void ABaseCharacter::NetMulticastReload_Implementation() {
+	if (Role == ROLE_AutonomousProxy || Role == ROLE_Authority) { return; } // Already done in attempt reload
+
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->StartReload();
+}
+
+
+
+void ABaseCharacter::ServerCancelReload_Implementation() {
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->CancelReload();
+
+	NetMulticastCancelReload();
+}
+
+void ABaseCharacter::NetMulticastCancelReload_Implementation() {
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->CancelReload();
 }
 
 
@@ -159,4 +226,28 @@ void ABaseCharacter::Destroyed() {
 	if (IsValid(Weapon)) {
 		Weapon->Destroy();
 	}
+}
+
+AWeapon* ABaseCharacter::GetEquippedWeapon() {
+	return Weapon;
+}
+
+
+void ABaseCharacter::HideHead() {
+	USkeletalMeshComponent* SkeletalMesh = GetMesh();
+	if (validate(IsValid(SkeletalMesh)) == false) { return; }
+	int BoneIndex = SkeletalMesh->GetBoneIndex(HeadBoneName);
+	if (validate(BoneIndex != INDEX_NONE) == false) { return; }
+	SkeletalMesh->HideBoneByName(HeadBoneName, EPhysBodyOp::PBO_MAX);
+	UE_LOG(LogTemp, Warning, TEXT("Hide Head"))
+}
+
+
+void ABaseCharacter::UpdateExternalHealthbar(int NewHealth) {
+	ExternalHealthbar->Update(NewHealth);
+}
+
+
+void ABaseCharacter::SetHealthWidgetComponent(UWidgetComponent* HealthbarWidgetComponent) {
+	this->HealthbarWidgetComponent = HealthbarWidgetComponent;
 }

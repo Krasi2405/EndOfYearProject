@@ -14,15 +14,18 @@
 #include "UI/IngameMenu.h"
 #include "UI/ChatBox.h"
 #include "UI/HeroPickerMenu.h"
+#include "UI/HeroInfoWidget.h"
 #include "CustomMacros.h"
 #include "BaseCharacter.h"
 #include "HeroSpawner.h"
 #include "BaseCharacter.h"
+#include "Weapon.h"
 #include "GameFramework/SpectatorPawn.h"
 #include "HealthComponent.h"
 #include "GameModes/HeroShooterGameMode.h"
 #include "GameModes/HeroShooterGameState.h"
 #include "GameModes/GameModeInfoWidget.h"
+
 
 AHeroPlayerController::AHeroPlayerController() {
 	bReplicates = true;
@@ -40,11 +43,26 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 
 	ABaseCharacter* PossessedCharacter = Cast<ABaseCharacter>(Pawn);
 	if (validate(IsValid(PossessedCharacter)) == false) { return; }
+	PossessedCharacter->HideHead();
+
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+	UHeroInfoWidget* HeroInfo = IngameHUD->GetHeroInfoWidget();
+	if (validate(IsValid(HeroInfo)) == false) { return; }
+
+	AWeapon* Weapon = PossessedCharacter->GetEquippedWeapon();
+	if (validate(IsValid(Weapon)) == false) { return; }
 
 	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
 
+	HeroInfo->Setup(Weapon->GetMaxAmmo(), HealthComponent->GetMaxHealth());
+
+	HealthComponent->OnHealthChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateHealthbar);
+	Weapon->OnAmmoChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateAmmoBar);
 	// TODO: Respawn timer.
+
+
 
 
 	DeactivateHeroPicker();

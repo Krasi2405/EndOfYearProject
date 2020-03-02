@@ -54,11 +54,12 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 			if (validate(IsValid(OwnerController)) == false) { return; }
 
 			if (OwnerController->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
-
-			AProjectile* Projectile = Cast<AProjectile>(OtherActor);
-			if (IsValid(Projectile)) { return; }
 			// TODO: Actually fix using proper projectile collision channel.
 		}
+		
+		AProjectile* Projectile = Cast<AProjectile>(OtherActor);
+		if (IsValid(Projectile)) { return; }
+
 		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (IsValid(HealthComponent)) {
 			HealthComponent->TakeDamage(Damage);

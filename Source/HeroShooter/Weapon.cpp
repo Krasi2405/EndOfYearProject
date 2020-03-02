@@ -5,16 +5,38 @@
 #include "TimerManager.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
+#include "Components/SceneComponent.h"
 
 #include "CustomMacros.h"
 #include "HealthComponent.h"
 #include "BaseCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Components/AudioComponent.h"
+
 
 AWeapon::AWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
+	SetRootComponent(CreateDefaultSubobject<USceneComponent>(FName("RootComponent")));
+
+	FiringPoint = CreateDefaultSubobject<USceneComponent>(FName("FiringPoint"));
+
+	FireParticleSystemComponent = CreateDefaultSubobject<UParticleSystemComponent>(FName("FiringParticles"));
+
+
+	FireAudioComponent = CreateDefaultSubobject<UAudioComponent>(FName("FireAudioComponent"));
+	FireAudioComponent->bAutoActivate = false;
+
+	ReloadAudioComponent = CreateDefaultSubobject<UAudioComponent>(FName("ReloadAudioComponent"));
+	ReloadAudioComponent->bAutoActivate = false;
+
+	OutOfAmmoAudioComponent = CreateDefaultSubobject<UAudioComponent>(FName("OutOfAmmoAudioComponent"));
+	OutOfAmmoAudioComponent->bAutoActivate = false;
 }
 
 
@@ -23,6 +45,10 @@ void AWeapon::BeginPlay()
 	Super::BeginPlay();
 	
 	CurrentAmmo = MaxAmmo;
+	if (validate(IsValid(FireParticleSystemComponent)) == false) { return; }
+	if (validate(IsValid(FireParticleSystemTemplate)) == false) { return; }
+	FireParticleSystemComponent->SetTemplate(FireParticleSystemTemplate);
+
 }
 
 
@@ -48,14 +74,25 @@ void AWeapon::PreFire() {
 		CurrentAmmo--; // ServerFire will take care of ammo if player is server as well.
 	}
 
-	Fire();
+	LocalFire();
 	ServerFire(GetAimingReticleDirection());
+
+	OnAmmoChanged.Broadcast(CurrentAmmo);
 }
 
 
-void AWeapon::Fire() {
-	validate(false);
-	// Workaround because pure virtual functions are not allowed in AActors.
+void AWeapon::LocalFire() {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+	if (validate(IsValid(FireParticleSystemTemplate)) == false) { return; }
+
+	FTransform FiringPointTransform = GetFiringPointGlobalTransform();
+	UParticleSystemComponent* ParticleComponent = UGameplayStatics::SpawnEmitterAtLocation(World, FireParticleSystemTemplate, FiringPointTransform);
+	if (validate(IsValid(ParticleComponent)) == false) { return; }
+	ParticleComponent->SetWorldRotation(FiringPointTransform.GetRotation());
+
+	if (validate(IsValid(FireAudioComponent)) == false) { return; }
+	FireAudioComponent->Play();
 }
 
 
@@ -75,6 +112,7 @@ void AWeapon::ReleaseTrigger() {
 
 void AWeapon::Reload() {
 	CurrentAmmo = MaxAmmo;
+	OnAmmoChanged.Broadcast(CurrentAmmo);
 }
 
 
@@ -97,20 +135,21 @@ FVector AWeapon::GetAimingReticleDirection() {
 	FVector HitLocation;
 	if (PlayerController->GetHitResultAtScreenPosition(FVector2D(Width / 2, Height / 2), ECC_Visibility, false, HitResult)) {
 		HitLocation = HitResult.Location;
+
+		FTransform FiringTransform = GetFiringPointGlobalTransform();
+
+		if (validate(IsValid(FiringPoint)) == false) { return FVector(0, 0, 0); }
+		FVector Start = FiringTransform.GetLocation();
+		FVector DirectionUnit;
+		float Length;
+		(HitLocation - Start).ToDirectionAndLength(DirectionUnit, Length);
+
+		return DirectionUnit;
 	}
 	else
 	{
-		validate(false);
-		return FVector(0, 0, 0);
+		return Owner->GetControlRotation().Vector();
 	}
-
-
-	FVector Start = GetActorLocation() + FiringPoint;
-	FVector DirectionUnit;
-	float Length;
-	(HitLocation - Start).ToDirectionAndLength(DirectionUnit, Length);
-
-	return DirectionUnit;
 }
 
 #if WITH_EDITOR
@@ -120,3 +159,25 @@ void AWeapon::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent
 	CurrentAmmo = MaxAmmo;
 }
 #endif
+
+FTransform AWeapon::GetFiringPointGlobalTransform() {
+	FTransform Transform = GetActorTransform();
+	
+	if (validate(IsValid(FiringPoint)) == false) { return Transform; }
+
+	FVector RotatedVector = GetActorRotation().RotateVector(FiringPoint->GetComponentLocation());
+	Transform.SetLocation(RotatedVector + GetActorLocation());
+	Transform.SetRotation(GetActorRotation().Quaternion());
+
+	return Transform;
+}
+
+
+int AWeapon::GetMaxAmmo() {
+	return MaxAmmo;
+}
+
+
+int AWeapon::GetCurrentAmmo() {
+	return CurrentAmmo;
+}

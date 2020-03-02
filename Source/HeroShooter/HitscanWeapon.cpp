@@ -11,10 +11,6 @@
 #include "HealthComponent.h"
 #include "BaseCharacter.h"
 
-void AHitscanWeapon::Fire() {
-
-}
-
 
 void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 	Super::ServerFire_Implementation(Direction);
@@ -25,8 +21,9 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 	ABaseCharacter* Owner = Cast<ABaseCharacter>(GetOwner());
 	if (validate(IsValid(Owner)) == false) { return; }
 
+	FTransform FiringTransform = GetFiringPointGlobalTransform();
 
-	FVector Start = GetActorLocation() + FiringPoint;
+	FVector Start = FiringTransform.GetLocation();
 	FVector End = Start + Direction * MaxRange;
 	DrawDebugLine(
 		World,

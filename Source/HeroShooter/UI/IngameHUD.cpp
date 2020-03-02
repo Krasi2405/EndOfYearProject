@@ -11,7 +11,7 @@
 #include "GameModes/GameModeInfoWidget.h"
 #include "GameModes/HeroShooterGameState.h"
 #include "GameFramework/PlayerController.h"
-
+#include "HeroInfoWidget.h"
 
 void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
 	APlayerController* PlayerController = GetOwningPlayerController();
@@ -35,6 +35,17 @@ void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
 	HeroPicker = CreateWidget<UHeroPickerMenu>(PlayerController, HeroPickerClass);
 	if (validate(IsValid(HeroPicker)) == false) { return; }
 	HeroPicker->AddToViewport();
+
+
+	if (validate(IsValid(HeroInfoTemplate)) == false) { return; }
+	HeroInfo = CreateWidget<UHeroInfoWidget>(PlayerController, HeroInfoTemplate);
+	if (validate(IsValid(HeroInfo)) == false) { return; }
+	HeroInfo->AddToViewport();
+}
+
+
+UHeroInfoWidget* AIngameHUD::GetHeroInfoWidget() {
+	return HeroInfo;
 }
 
 
@@ -53,6 +64,9 @@ void AIngameHUD::ActivateHeroPicker() {
 	HeroPicker->SetVisibility(ESlateVisibility::Visible);
 
 	SetInputSettings(FInputModeUIOnly(), true);
+
+	if (validate(IsValid(HeroInfo)) == false) { return; }
+	HeroInfo->SetVisibility(ESlateVisibility::Hidden);
 }
 
 
@@ -61,6 +75,10 @@ void AIngameHUD::DeactivateHeroPicker() {
 	HeroPicker->SetVisibility(ESlateVisibility::Hidden);
 
 	SetInputSettings(FInputModeGameOnly(), false);
+
+
+	if (validate(IsValid(HeroInfo)) == false) { return; }
+	HeroInfo->SetVisibility(ESlateVisibility::Visible);
 }
 
 

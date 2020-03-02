@@ -10,8 +10,10 @@
 #include "CustomMacros.h"
 #include "HeroPlayerController.h"
 
-void AProjectileWeapon::Fire() {
-	
+void AProjectileWeapon::LocalFire() {
+	Super::LocalFire();
+
+	// TODO: Simulate the projectile locally as well.
 }
 
 
@@ -30,9 +32,10 @@ void AProjectileWeapon::ServerFire_Implementation(FVector Direction) {
 	SpawnParameters.Instigator = Owner->Instigator;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UE_LOG(LogTemp, Warning, TEXT("Instigator: %s"), *Owner->Instigator->GetName());
 
-	FVector ProjectileSpawnLocation = GetActorLocation() + FiringPoint;
+	FTransform FiringTransform = GetFiringPointGlobalTransform();
+
+	FVector ProjectileSpawnLocation = FiringTransform.GetLocation();
 	FRotator ProjectileSpawnRotation = Direction.Rotation();
 
 	if (validate(IsValid(ProjectileTemplate)) == false) { return; }

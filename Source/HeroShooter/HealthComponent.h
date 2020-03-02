@@ -42,10 +42,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	int MaxHealth;
 
-	UPROPERTY(VisibleInstanceOnly, Replicated)
+	UPROPERTY(VisibleInstanceOnly, ReplicatedUsing=OnRep_Health)
 	int Health;
 
 	bool bDead = false;
+
+	UFUNCTION()
+	void OnRep_Health();
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 };

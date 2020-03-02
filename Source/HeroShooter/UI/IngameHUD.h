@@ -13,6 +13,7 @@ class UChatBox;
 class UHeroPickerMenu;
 class UGameModeInfoWidget;
 class UUserWidget;
+class UHeroInfoWidget;
 class AHeroShooterGameState;
 
 /**
@@ -28,6 +29,9 @@ public:
 	void SetupWidgets(AHeroShooterGameState* GameState);
 
 	UGameModeInfoWidget* GetGameModeInfoWidget();
+
+
+	UHeroInfoWidget* GetHeroInfoWidget();
 
 
 	UHeroPickerMenu* GetHeroPicker();
@@ -58,6 +62,13 @@ protected:
 
 	UPROPERTY()
 	UGameModeInfoWidget* GameModeInfoWidget = nullptr;
+
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UHeroInfoWidget> HeroInfoTemplate;
+
+	UPROPERTY()
+	UHeroInfoWidget* HeroInfo = nullptr;
 
 
 	UPROPERTY(EditDefaultsOnly)

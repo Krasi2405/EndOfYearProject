@@ -33,3 +33,30 @@ void UHeroAnimInstance::NativeUpdateAnimation(float DeltaTimeX) {
 	AimOffsetVertical = RotationDelta.Pitch;
 	// AimOffsetHorizontal = RotationDelta.Yaw;
 }
+
+
+void UHeroAnimInstance::FinishReload() {
+	OnReloadFinished.Broadcast();
+	bReloading = false;
+}
+
+
+void UHeroAnimInstance::StartReload(float StartTime) {
+	if (bReloading == false) {
+		OnStartReload(StartTime);
+		bReloading = true;
+	}
+	else
+	{
+		OnCancelReload();
+		OnStartReload(StartTime);
+	}
+}
+
+
+void UHeroAnimInstance::CancelReload() {
+	if (bReloading) {
+		OnCancelReload();
+		bReloading = false;
+	}
+}
