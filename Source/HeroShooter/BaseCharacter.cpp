@@ -47,6 +47,7 @@ void ABaseCharacter::BeginPlay()
 	if (validate(IsValid(HealthComponent)) == false) { return; }
 	ExternalHealthbar->Setup(HealthComponent->GetMaxHealth());
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ABaseCharacter::UpdateExternalHealthbar);
+	HealthComponent->OnDeath.AddDynamic(this, &ABaseCharacter::Die);
 	
 	if (IsValid(StartingWeaponTemplate)) {
 		if (HasAuthority() == false) { return; }
@@ -239,7 +240,6 @@ void ABaseCharacter::HideHead() {
 	int BoneIndex = SkeletalMesh->GetBoneIndex(HeadBoneName);
 	if (validate(BoneIndex != INDEX_NONE) == false) { return; }
 	SkeletalMesh->HideBoneByName(HeadBoneName, EPhysBodyOp::PBO_MAX);
-	UE_LOG(LogTemp, Warning, TEXT("Hide Head"))
 }
 
 
@@ -250,4 +250,11 @@ void ABaseCharacter::UpdateExternalHealthbar(int NewHealth) {
 
 void ABaseCharacter::SetHealthWidgetComponent(UWidgetComponent* HealthbarWidgetComponent) {
 	this->HealthbarWidgetComponent = HealthbarWidgetComponent;
+}
+
+
+void ABaseCharacter::Die() {
+	UE_LOG(LogTemp, Warning, TEXT("Die"))
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	HeroAnimInstance->OnDeath();
 }

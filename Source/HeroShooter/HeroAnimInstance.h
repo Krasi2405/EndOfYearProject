@@ -24,6 +24,9 @@ public:
 
 	void CancelReload();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnDeath();
+
 	FOnReloadFinished OnReloadFinished;
 
 protected:

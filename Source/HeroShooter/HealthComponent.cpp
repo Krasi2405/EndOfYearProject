@@ -87,6 +87,10 @@ float UHealthComponent::GetMaxHealth() {
 
 void UHealthComponent::OnRep_Health() {
 	OnHealthChanged.Broadcast(Health);
+	if (Health <= 0) {
+		bDead = true;
+		OnDeath.Broadcast();
+	}
 }
 
 

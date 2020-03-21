@@ -116,4 +116,7 @@ protected:
 
 	UPROPERTY()
 	UHeroAnimInstance* HeroAnimInstance;
+
+	UFUNCTION()
+	void Die();
 };

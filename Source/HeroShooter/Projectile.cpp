@@ -43,7 +43,13 @@ void AProjectile::BeginPlay()
 	}
 }
 
-void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AProjectile::OnOverlapBegin(
+	UPrimitiveComponent* OverlappedComp, 
+	AActor* OtherActor, 
+	UPrimitiveComponent* OtherComp, 
+	int32 OtherBodyIndex, 
+	bool bFromSweep, 
+	const FHitResult& SweepResult)
 {
 	if (validate(IsValid(OtherActor)) == false) { return; }
 
@@ -52,9 +58,7 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 		if (IsValid(BaseCharacter)) {
 			AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(BaseCharacter->GetController());
 			if (validate(IsValid(OwnerController)) == false) { return; }
-
 			if (OwnerController->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
-			// TODO: Actually fix using proper projectile collision channel.
 		}
 
 		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();

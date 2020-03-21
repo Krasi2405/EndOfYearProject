@@ -42,7 +42,6 @@ void UHeroPickerMenu::Setup(AHeroSpawner* ConnectedSpawner) {
 
 
 bool UHeroPickerMenu::InitializeHeroList() {
-	UE_LOG(LogTemp, Warning, TEXT("InitializeHeroList!"))
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return false; }
 	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());

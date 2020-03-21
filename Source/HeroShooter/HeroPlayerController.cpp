@@ -70,13 +70,12 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 void AHeroPlayerController::OnPossess(APawn* Pawn) {
 	Super::OnPossess(Pawn);
 
-	if (validate(IsValid(Pawn)) == false) { return; }
-
 	ABaseCharacter* PossessedCharacter = Cast<ABaseCharacter>(Pawn);
 	if (validate(IsValid(PossessedCharacter)) == false) { return; }
 	
 	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
+
 	HealthComponent->OnDeath.AddDynamic(this, &AHeroPlayerController::ServerHandleDeath);
 }
 
@@ -92,14 +91,13 @@ void AHeroPlayerController::ServerHandleDeath() {
 	if (validate(IsValid(GameMode)) == false) { return; }
 
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	BaseCharacter->DisableInput(this);
 	if (validate(IsValid(BaseCharacter)) == false) { return; }
 	UHealthComponent* HealthComponent = BaseCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
 
 	AHeroPlayerController* KillerHeroController = Cast<AHeroPlayerController>(HealthComponent->GetLastDamagedBy());
-
 	GameMode->HandleDeath(this, KillerHeroController);
-
 	// TODO: Wait a bit and respawn player
 }
 
@@ -208,10 +206,6 @@ int AHeroPlayerController::GetTeamIndex() {
 
 void AHeroPlayerController::OnRep_TeamIndex() {
 	SetTeamIndex(TeamIndex);
-
-	if (LastTeamSetupIndex != TeamIndex && bBeginPlayExecuted) {
-		TeamSetup();
-	}
 }
 
 
@@ -227,8 +221,6 @@ void AHeroPlayerController::TeleportSpectatorToHeroPicker() {
 
 
 void AHeroPlayerController::TeamSetup() {
-	UE_LOG(LogTemp, Warning, TEXT("TeamSetup"))
-
 	if (validate(TeamIndex != -1) == false) { return; }
 	
 	UWorld* World = GetWorld();
@@ -242,7 +234,6 @@ void AHeroPlayerController::TeamSetup() {
 		AHeroSpawner* Spawner = Cast<AHeroSpawner>(SpawnerActor);
 		if (validate(IsValid(Spawner)) == false) { return; }
 		if (Spawner->GetTeamIndex() == TeamIndex) {
-			UE_LOG(LogTemp, Warning, TEXT("%s got Spawner %s"), *GetName(), *Spawner->GetName());
 			TeamSpawner = Spawner;
 			break;
 		}
@@ -270,9 +261,11 @@ void AHeroPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(AHeroPlayerController, TeamIndex);
 }
 
+
 void AHeroPlayerController::ChooseHero(TSubclassOf<ABaseCharacter> Hero) {
 	ServerSpawnHero(Hero);
 }
+
 
 void AHeroPlayerController::ServerSpawnHero_Implementation(TSubclassOf<ABaseCharacter> Hero) {
 	if (validate(IsValid(TeamSpawner)) == false) { return; }
