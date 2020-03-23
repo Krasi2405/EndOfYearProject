@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/GameplayAbility.h"
 #include "BaseCharacter.generated.h"
 
 
@@ -12,9 +14,13 @@ class UHealthComponent;
 class UHeroAnimInstance;
 class UWidgetComponent;
 class UHealthbar;
+class UCustomGameplayAbility;
+class UActiveGameplayAbility;
+class UPassiveGameplayAbility;
+class UAttributeSetBase;
 
 UCLASS()
-class HEROSHOOTER_API ABaseCharacter : public ACharacter
+class HEROSHOOTER_API ABaseCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -25,6 +31,17 @@ public:
 	AWeapon* GetEquippedWeapon();
 
 	void HideHead();
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION()
+	void ActivateAbility(int AbilityIndex);
+
+	UFUNCTION(BlueprintCallable)
+	void AddGameplayTag(FGameplayTag Tag);
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveGameplayTag(FGameplayTag Tag);
 
 protected:
 	// Called when the game starts or when spawned
@@ -119,4 +136,22 @@ protected:
 
 	UFUNCTION()
 	void Die();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UAbilitySystemComponent* AbilitySystemComponent;
+
+	UFUNCTION(BlueprintCallable)
+	void AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire);
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<UCustomGameplayAbility>> Abilities;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TSubclassOf<UActiveGameplayAbility>> ActiveAbilities;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TSubclassOf<UPassiveGameplayAbility>> PassiveAbilities;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UAttributeSetBase* AttributeSet;
 };

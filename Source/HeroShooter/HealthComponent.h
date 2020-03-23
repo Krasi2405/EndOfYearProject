@@ -23,9 +23,13 @@ public:
 
 	APlayerController* GetLastDamagedBy();
 
+	void SetHealth(float Health);
+
 	void TakeDamage(float Damage, APlayerController* Damager);
 
 	void Heal(float HealingPower);
+
+	void SetDamager(APlayerController* Damager);
 
 	float GetHealth();
 

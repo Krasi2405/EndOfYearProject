@@ -108,4 +108,7 @@ protected:
 	UFUNCTION()
 	void HandleWinCondition(int WinningTeamIndex);
 
+	UFUNCTION()
+	void ActivateAbility(int AbilityIndex);
+
 };

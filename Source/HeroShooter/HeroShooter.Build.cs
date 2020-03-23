@@ -15,5 +15,7 @@ public class HeroShooter : ModuleRules
         PrivateDependencyModuleNames.AddRange(new string[] { "OnlineSubsystem", "OnlineSubsystemSteam" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+
+        PublicDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTags", "GameplayTasks" });
     }
 }

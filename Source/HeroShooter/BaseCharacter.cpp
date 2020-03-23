@@ -11,11 +11,17 @@
 #include "Engine/Engine.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "GameplayAbilities/Public/AbilitySystemComponent.h"
 
 #include "UI/Healthbar.h"
 #include "HeroAnimInstance.h"
 #include "HealthComponent.h"
 #include "Weapon.h"
+#include "CustomGameplayAbility.h"
+#include "PassiveGameplayAbility.h"
+#include "PassiveAbilityComponent.h"
+#include "ActiveGameplayAbility.h"
+#include "AttributeSetBase.h"
 #include "CustomMacros.h"
 
 // Sets default values
@@ -28,6 +34,10 @@ ABaseCharacter::ABaseCharacter()
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(FName("HealthComponent"));
 	validate(IsValid(HealthComponent));
+
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(FName("AbilitySystemComponent"));
+
+	AttributeSet = CreateDefaultSubobject<UAttributeSetBase>(FName("Attribute Set"));
 }
 
 // Called when the game starts or when spawned
@@ -48,6 +58,9 @@ void ABaseCharacter::BeginPlay()
 	ExternalHealthbar->Setup(HealthComponent->GetMaxHealth());
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ABaseCharacter::UpdateExternalHealthbar);
 	HealthComponent->OnDeath.AddDynamic(this, &ABaseCharacter::Die);
+
+	if (validate(IsValid(AttributeSet)) == false) { return; }
+	AttributeSet->Setup();
 	
 	if (IsValid(StartingWeaponTemplate)) {
 		if (HasAuthority() == false) { return; }
@@ -116,6 +129,10 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABaseCharacter::AttemptReload);
 	PlayerInputComponent->BindAction("CancelReload", IE_Pressed, this, &ABaseCharacter::CancelReload);
+
+	for (TSubclassOf<UCustomGameplayAbility> Ability : Abilities) {
+		AcquireAbility(Ability);
+	}
 }
 
 
@@ -257,4 +274,91 @@ void ABaseCharacter::Die() {
 	UE_LOG(LogTemp, Warning, TEXT("Die"))
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 	HeroAnimInstance->OnDeath();
+}
+
+
+UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent() const {
+	return AbilitySystemComponent;
+}
+
+
+void ABaseCharacter::AddGameplayTag(FGameplayTag Tag) {
+	GetAbilitySystemComponent()->SetLooseGameplayTagCount(Tag, 1);
+}
+
+
+void ABaseCharacter::RemoveGameplayTag(FGameplayTag Tag) {
+	GetAbilitySystemComponent()->RemoveLooseGameplayTag(Tag);
+}
+
+
+void ABaseCharacter::AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire) {
+	if (validate(IsValid(AbilitySystemComponent)) == false) { return; }
+	if (validate(AbilityToAcquire != nullptr) == false) { return; }
+
+	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityToAcquire));
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	TSubclassOf<UActiveGameplayAbility> ActiveAbilityToAcquire(AbilityToAcquire);
+	if (IsValid(ActiveAbilityToAcquire)) {
+
+		if (ActiveAbilities.Contains(ActiveAbilityToAcquire) == false) {
+			ActiveAbilities.Add(ActiveAbilityToAcquire);
+		}
+		int AbilityIndex = ActiveAbilities.Find(ActiveAbilityToAcquire);
+
+		AController* Controller = GetController();
+		if (validate(IsValid(Controller)) == false) { return; }
+
+		UInputComponent* InputComponent = Controller->InputComponent;
+		if (IsValid(InputComponent)) {
+			UActiveGameplayAbility* ActiveGameplayAbility = Cast<UActiveGameplayAbility>(ActiveAbilityToAcquire.GetDefaultObject());
+			if (validate(IsValid(ActiveGameplayAbility)) == false) { return; }
+
+			FInputActionBinding ActionBinding(
+				ActiveGameplayAbility->GetInputActionName(), ActiveGameplayAbility->GetActivationInputEvent()
+			);
+
+			FInputActionHandlerSignature Delegate;
+			Delegate.BindUFunction(this, FName("ActivateAbility"), AbilityIndex);
+			ActionBinding.ActionDelegate = Delegate;
+
+			InputComponent->AddActionBinding(ActionBinding);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Active ability not bound to input!"))
+		}
+	}
+	else
+	{
+		TSubclassOf<UPassiveGameplayAbility> PassiveAbilityToAcquire(AbilityToAcquire);
+		if (validate(IsValid(PassiveAbilityToAcquire)) == false) {
+			UE_LOG(LogTemp, Error, TEXT("Acquired ability is neither active nor passive!"))
+			return;
+		}
+
+		UPassiveGameplayAbility* DefaultAbility = PassiveAbilityToAcquire.GetDefaultObject();
+		if (validate(IsValid(DefaultAbility)) == false) { return; }
+
+		TSubclassOf<UPassiveAbilityComponent> PassiveComponentTemplate = DefaultAbility->GetPassiveAbilityComponentTemplate();
+		if (validate(IsValid(PassiveComponentTemplate)) == false) { return; };
+
+		UPassiveAbilityComponent* DefaultComponent = Cast<UPassiveAbilityComponent>(PassiveComponentTemplate->GetDefaultObject());
+		if (validate(IsValid(DefaultComponent)) == false) { return; }
+
+		UPassiveAbilityComponent* InstantiatedComponent = Cast<UPassiveAbilityComponent>(CreateComponentFromTemplate(
+			DefaultComponent, DefaultComponent->GetFName()
+		));
+		if (validate(IsValid(InstantiatedComponent)) == false) { return; }
+		InstantiatedComponent->SetAbility(PassiveAbilityToAcquire);
+	}
+}
+
+
+void ABaseCharacter::ActivateAbility(int AbilityIndex) {
+	if (validate(ActiveAbilities.Num() >= AbilityIndex) == false) { return; }
+	TSubclassOf<UGameplayAbility> Ability = ActiveAbilities[AbilityIndex];
+	if (validate(Ability != nullptr) == false) { return; }
+	GetAbilitySystemComponent()->TryActivateAbilityByClass(Ability);
 }

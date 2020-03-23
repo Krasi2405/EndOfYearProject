@@ -38,6 +38,21 @@ void UHealthComponent::TakeDamage(float Damage, APlayerController* LastDamagedBy
 	}
 	OnHealthChanged.Broadcast(Health);
 
+	SetDamager(LastDamagedByPlayer);
+}
+
+
+void UHealthComponent::SetHealth(float NewHealth) {
+	if (Health > NewHealth) {
+		TakeDamage(Health - NewHealth, LastDamagedByPlayer);
+	}
+	else if (Health < NewHealth) {
+		Heal(NewHealth - Health);
+	}
+}
+
+
+void UHealthComponent::SetDamager(APlayerController* Damager) {
 	this->LastDamagedByPlayer = LastDamagedByPlayer;
 
 	UWorld* World = GetWorld();
@@ -52,7 +67,6 @@ void UHealthComponent::TakeDamage(float Damage, APlayerController* LastDamagedBy
 		false										// don't loop
 	);
 }
-
 
 void UHealthComponent::ClearLastDamagedBy() {
 	LastDamagedByPlayer = nullptr;

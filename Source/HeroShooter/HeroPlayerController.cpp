@@ -136,6 +136,7 @@ void AHeroPlayerController::SetupInputComponent() {
 
 	InputComponent->BindAction(FName("ToggleIngameMenu"), IE_Pressed, this, &AHeroPlayerController::ToggleIngameMenu);
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
+
 }
 
 
@@ -295,4 +296,9 @@ void AHeroPlayerController::HandleWinCondition(int WinningTeamIndex) {
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
 	WinningTeamIndex == TeamIndex ? IngameHUD->ShowWinningDisplay() : IngameHUD->ShowLosingDisplay();
+}
+
+
+void AHeroPlayerController::ActivateAbility(int AbilityIndex) {
+
 }
