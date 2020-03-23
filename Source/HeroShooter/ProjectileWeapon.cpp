@@ -9,6 +9,7 @@
 #include "Projectile.h"
 #include "CustomMacros.h"
 #include "HeroPlayerController.h"
+#include "HeroPlayerState.h"
 
 void AProjectileWeapon::LocalFire() {
 	Super::LocalFire();
@@ -48,7 +49,11 @@ void AProjectileWeapon::ServerFire_Implementation(FVector Direction) {
 
 	if (validate(IsValid(Projectile)) == false) { return; }
 
-	AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(Owner->GetController());
+	AController* OwnerController = Owner->GetController();
 	if (validate(IsValid(OwnerController)) == false) { return; }
-	Projectile->SetTeamIndex(OwnerController->GetTeamIndex());
+
+	AHeroPlayerState* HeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
+
+	Projectile->SetTeamIndex(HeroPlayerState->GetTeamIndex());
 }

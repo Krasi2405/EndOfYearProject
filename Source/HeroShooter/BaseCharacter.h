@@ -18,6 +18,7 @@ class UCustomGameplayAbility;
 class UActiveGameplayAbility;
 class UPassiveGameplayAbility;
 class UAttributeSetBase;
+class UBehaviorTree;
 
 UCLASS()
 class HEROSHOOTER_API ABaseCharacter : public ACharacter, public IAbilitySystemInterface
@@ -43,6 +44,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RemoveGameplayTag(FGameplayTag Tag);
 
+	UBehaviorTree* GetAIBehaviorTreeForCurrentGamemode();
+
+	void StartFiring();
+
+	void StopFiring();
+
+	UFUNCTION()
+	void AttemptReload();
+
+	UFUNCTION()
+	void CancelReload();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -56,9 +69,6 @@ protected:
 
 	virtual void Destroyed() override;
 
-	UFUNCTION()
-	void AttemptReload();
-
 	// Send reload command to server 
 	UFUNCTION(Server, Reliable)
 	void ServerReload();
@@ -71,8 +81,6 @@ protected:
 
 	void NetMulticastReload_Implementation();
 
-	UFUNCTION()
-	void CancelReload();
 
 	// Cancel reload command to server 
 	UFUNCTION(Server, Reliable)
@@ -114,16 +122,14 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponSpawn, VisibleInstanceOnly)
 	AWeapon* Weapon = nullptr;
 
+	bool bReloading = false;
+
 	UFUNCTION()
 	void OnRep_WeaponSpawn();
 
 	void MoveForward(float Value);
 
 	void MoveRight(float Value);
-
-	void StartFiring();
-
-	void StopFiring();
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Base Character")
 	class USpringArmComponent* SpringArmComponent;
@@ -154,4 +160,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UAttributeSetBase* AttributeSet;
+
+	UPROPERTY(EditDefaultsOnly)
+	UBehaviorTree* BehaviourTree;
+
+	UFUNCTION()
+	void Reload();
+
 };

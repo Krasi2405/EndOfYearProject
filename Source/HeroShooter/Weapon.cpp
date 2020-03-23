@@ -53,6 +53,7 @@ void AWeapon::BeginPlay()
 
 
 void AWeapon::PullTrigger() {
+	bFiring = true;
 	GetWorldTimerManager().SetTimer(
 		TriggerTimerHandle,
 		this,
@@ -106,6 +107,7 @@ bool AWeapon::ServerFire_Validation(FVector Direction) {
 
 
 void AWeapon::ReleaseTrigger() {
+	bFiring = false;
 	GetWorldTimerManager().ClearTimer(TriggerTimerHandle);
 }
 
@@ -180,4 +182,10 @@ int AWeapon::GetMaxAmmo() {
 
 int AWeapon::GetCurrentAmmo() {
 	return CurrentAmmo;
+}
+
+
+
+bool AWeapon::IsFiring() {
+	return bFiring;
 }

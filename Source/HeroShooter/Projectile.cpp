@@ -11,6 +11,7 @@
 #include "HeroPlayerController.h"
 #include "BaseCharacter.h"
 #include "HealthComponent.h"
+#include "HeroPlayerState.h"
 #include "CustomMacros.h"
 
 AProjectile::AProjectile()
@@ -56,15 +57,18 @@ void AProjectile::OnOverlapBegin(
 	if (HasAuthority()) {
 		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
 		if (IsValid(BaseCharacter)) {
-			AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(BaseCharacter->GetController());
-			if (validate(IsValid(OwnerController)) == false) { return; }
-			if (OwnerController->GetTeamIndex() == TeamIndex) { return; } // Don't hit people with same team.
+			AController* OtherController = BaseCharacter->GetController();
+			if (IsValid(OtherController) == false) { return; }
+
+			AHeroPlayerState* OtherHeroPlayerState = OtherController->GetPlayerState<AHeroPlayerState>();
+			if (validate(IsValid(OtherHeroPlayerState)) == false) { return; }
+			UE_LOG(LogTemp, Warning, TEXT("Collide with player state which has team index of %d"), OtherHeroPlayerState->GetTeamIndex())
+			if (OtherHeroPlayerState->GetTeamIndex() == TeamIndex) { return; }
 		}
 
 		UHealthComponent* HealthComponent = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (IsValid(HealthComponent)) {
-			AHeroPlayerController* HeroController = Cast<AHeroPlayerController>(GetInstigatorController());
-			HealthComponent->TakeDamage(Damage, HeroController);
+			HealthComponent->TakeDamage(Damage, GetInstigatorController());
 		}
 	}
 

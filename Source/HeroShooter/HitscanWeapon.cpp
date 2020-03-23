@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 
 #include "HeroPlayerController.h"
+#include "HeroPlayerState.h"
 #include "CustomMacros.h"
 #include "HealthComponent.h"
 #include "BaseCharacter.h"
@@ -47,10 +48,13 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		QueryParams
 	);
 
-	AHeroPlayerController* OwnerController = Cast<AHeroPlayerController>(Owner->GetController());
+	AController* OwnerController = Owner->GetController();
 	if (validate(IsValid(OwnerController)) == false) { return; }
 
-	int TeamIndex = OwnerController->GetTeamIndex();
+	AHeroPlayerState* HeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
+
+	int TeamIndex = HeroPlayerState->GetTeamIndex();
 	for (FHitResult HitResult : OutHits) {
 		AActor* HitActor = HitResult.Actor.Get();
 		if (validate(IsValid(HitActor)) == false) { return; }
@@ -59,9 +63,15 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		if (IsValid(HealthComponent) == false) { continue; }
 
 		ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
-		if (IsValid(Character) == false) { return; }
-		AHeroPlayerController* OtherController = Cast<AHeroPlayerController>(Character->GetController());
-		if (IsValid(OtherController) && OtherController->GetTeamIndex() == TeamIndex) { continue; }
+		if (IsValid(Character)) {
+			AController* OtherController = Character->GetController();
+			if (IsValid(OtherController) == false) { continue; }
+
+			AHeroPlayerState* OtherHeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
+			if (validate(IsValid(OtherHeroPlayerState)) == false) { return; }
+
+			if (OtherHeroPlayerState->GetTeamIndex() == TeamIndex) { continue; }
+		}
 
 		HealthComponent->TakeDamage((float) Damage, OwnerController);
 		return;

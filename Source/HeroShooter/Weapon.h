@@ -41,6 +41,8 @@ public:
 
 	int GetCurrentAmmo();
 
+	bool IsFiring();
+
 	FOnAmmoChanged OnAmmoChanged;
 
 	FOutOfAmmo OnOutOfAmmo;
@@ -100,6 +102,8 @@ protected:
 	int CurrentAmmo = 30;
 
 	FTimerHandle TriggerTimerHandle;
+
+	bool bFiring = false;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

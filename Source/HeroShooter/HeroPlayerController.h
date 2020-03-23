@@ -31,11 +31,12 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientReceiveMessage(APlayerState* SendingPlayer, const FString& Message);
 
-	void SetTeamIndex(int NewTeamIndex);
-
-	int GetTeamIndex();
-
 	void TeleportSpectatorToHeroPicker();
+
+	// Called after team index is changed on client and right away on server.
+	void TeamSetup();
+
+	void SetTeamIndex(int NewTeamIndex);
 
 protected:
 
@@ -90,25 +91,13 @@ protected:
 	void ToggleIngameMenu();
 
 	bool bIngameMenuActive = false;
+	
 
-
-	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex, VisibleAnywhere)
 	int TeamIndex = -1;
 
 	int LastTeamSetupIndex = -1;
 
-	// Called after team index is changed on client and right away on server.
-	void TeamSetup();
-
-	UFUNCTION()
-	void OnRep_TeamIndex();
-
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
-
 	UFUNCTION()
 	void HandleWinCondition(int WinningTeamIndex);
-
-	UFUNCTION()
-	void ActivateAbility(int AbilityIndex);
 
 };

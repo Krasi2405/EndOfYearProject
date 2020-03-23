@@ -69,8 +69,9 @@ void AHeroSpawner::SpawnHeroPreview(TSubclassOf<ABaseCharacter> HeroTemplate) {
 }
 
 
-void AHeroSpawner::SpawnHero(APlayerController* PlayerController, TSubclassOf<ABaseCharacter> HeroTemplate) {
+void AHeroSpawner::SpawnHero(AController* Controller, TSubclassOf<ABaseCharacter> HeroTemplate) {
 	if (validate(IsValid(SpawnLocation)) == false) { return; }
+	if (validate(HasAuthority()) == false) { return; }
 
 	FVector Location = SpawnLocation->GetActorLocation();
 	FVector BoxSize = SpawnLocation->GetBounds().GetBox().GetSize();
@@ -94,9 +95,9 @@ void AHeroSpawner::SpawnHero(APlayerController* PlayerController, TSubclassOf<AB
 	);
 
 	if (validate(IsValid(Hero)) == false) { return; }
-	if (validate(IsValid(PlayerController)) == false) { return; }
+	if (validate(IsValid(Controller)) == false) { return; }
 
-	PlayerController->Possess(Hero);
+	Controller->Possess(Hero);
 }
 
 

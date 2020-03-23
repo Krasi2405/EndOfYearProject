@@ -75,7 +75,8 @@ void ABaseCharacter::BeginPlay()
 		Weapon = World->SpawnActor<AWeapon>(StartingWeaponTemplate, SpawnInfo);
 		if (validate(IsValid(Weapon)) == false) { return; }
 		Weapon->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "GunSocket");
-		HeroAnimInstance->OnReloadFinished.AddDynamic(Weapon, &AWeapon::Reload);
+		Weapon->OnOutOfAmmo.AddDynamic(this, &ABaseCharacter::AttemptReload);
+		HeroAnimInstance->OnReloadFinished.AddDynamic(this, &ABaseCharacter::Reload);
 	}
 	else
 	{
@@ -88,7 +89,7 @@ void ABaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (IsLocallyControlled() && IsValid(GetController())) {
+	if (IsValid(Cast<APlayerController>(GetController())) && IsLocallyControlled()) {
 		float MoveForwardValue = GetInputAxisValue("MoveForward");
 		MoveForward(MoveForwardValue);
 
@@ -100,7 +101,6 @@ void ABaseCharacter::Tick(float DeltaTime)
 		FRotator DeltaRotation = FRotator(X, Y, 0);
 
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		if (validate(IsValid(PlayerController)) == false) { return; }
 
 		FRotator NewRotation = PlayerController->GetControlRotation() + DeltaRotation;
 		NewRotation.Pitch = FMath::Clamp(NewRotation.Pitch, MinControlPitch, MaxControlPitch);
@@ -143,26 +143,32 @@ void ABaseCharacter::OnRep_WeaponSpawn() {
 }
 
 void ABaseCharacter::CancelReload() {
+	if (bReloading == false) { return; }
+
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 	HeroAnimInstance->CancelReload();
+
+	bReloading = false;
 }
 
 void ABaseCharacter::AttemptReload() {
-	float ElapsedTime = UKismetSystemLibrary::GetGameTimeInSeconds(GetWorld());
-
-	UE_LOG(LogTemp, Warning, TEXT("Attempt reload %s on client at %f"), *GetName(), ElapsedTime);
+	if (bReloading) { return; }
 
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 	HeroAnimInstance->StartReload();
 	ServerReload();
+
+	bReloading = true;
+}
+
+
+void ABaseCharacter::Reload() {
+	if (validate(IsValid(Weapon)) == false) { return; }
+	Weapon->Reload();
+	bReloading = false;
 }
 
 void ABaseCharacter::ServerReload_Implementation() {
-	float ElapsedTime = UKismetSystemLibrary::GetGameTimeInSeconds(GetWorld());
-
-
-	UE_LOG(LogTemp, Warning, TEXT("Receive reload %s on server at %f"), *GetName(), ElapsedTime);
-
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 	HeroAnimInstance->StartReload();
 
@@ -361,4 +367,8 @@ void ABaseCharacter::ActivateAbility(int AbilityIndex) {
 	TSubclassOf<UGameplayAbility> Ability = ActiveAbilities[AbilityIndex];
 	if (validate(Ability != nullptr) == false) { return; }
 	GetAbilitySystemComponent()->TryActivateAbilityByClass(Ability);
+}
+
+UBehaviorTree* ABaseCharacter::GetAIBehaviorTreeForCurrentGamemode() {
+	return BehaviourTree;
 }

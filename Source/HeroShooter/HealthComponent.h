@@ -7,6 +7,7 @@
 #include "HealthComponent.generated.h"
 
 class APlayerState;
+class AController;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDie);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHealthChange, int, Health);
@@ -21,15 +22,15 @@ public:
 	// Sets default values for this component's properties
 	UHealthComponent();
 
-	APlayerController* GetLastDamagedBy();
+	AController* GetLastDamagedBy();
 
 	void SetHealth(float Health);
 
-	void TakeDamage(float Damage, APlayerController* Damager);
+	void TakeDamage(float Damage, AController* Damager);
 
 	void Heal(float HealingPower);
 
-	void SetDamager(APlayerController* Damager);
+	void SetDamager(AController* Damager);
 
 	float GetHealth();
 
@@ -60,7 +61,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 	UPROPERTY()
-	APlayerController* LastDamagedByPlayer = nullptr;
+	AController* LastDamagedByPlayer = nullptr;
 
 	void ClearLastDamagedBy();
 

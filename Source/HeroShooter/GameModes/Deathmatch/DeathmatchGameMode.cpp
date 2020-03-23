@@ -5,16 +5,20 @@
 
 #include "GameModes/Deathmatch/DeathmatchGameState.h"
 #include "HeroPlayerController.h"
+#include "HeroPlayerState.h"
 #include "CustomMacros.h"
 
-void ADeathmatchGameMode::HandleDeath(AHeroPlayerController* PlayerController, AHeroPlayerController* KillerController) {
+void ADeathmatchGameMode::HandleDeath(AController* PlayerController, AController* KillerController) {
 	Super::HandleDeath(PlayerController, KillerController);
 
 	ADeathmatchGameState* GameState = GetGameState<ADeathmatchGameState>();
 	if (validate(IsValid(GameState)) == false) { return; }
 
 	if (IsValid(KillerController)) {
-		int KillerTeamIndex = KillerController->GetTeamIndex();
+		AHeroPlayerState* KillerPlayerState = KillerController->GetPlayerState<AHeroPlayerState>();
+		if (validate(IsValid(KillerPlayerState)) == false) { return; }
+
+		int KillerTeamIndex = KillerPlayerState->GetTeamIndex();
 		if (validate(KillerTeamIndex != -1) == false) { return; }
 
 		GameState->AddKill(KillerTeamIndex);
@@ -25,6 +29,12 @@ void ADeathmatchGameMode::HandleDeath(AHeroPlayerController* PlayerController, A
 	else
 	{
 		if (validate(IsValid(PlayerController)) == false) { return; }
-		GameState->RemoveKill(PlayerController->GetTeamIndex());
+
+		AHeroPlayerState* PlayerState = PlayerController->GetPlayerState<AHeroPlayerState>();
+		if (validate(IsValid(PlayerState)) == false) { return; }
+
+		int TeamIndex = PlayerState->GetTeamIndex();
+
+		GameState->RemoveKill(TeamIndex);
 	}
 }

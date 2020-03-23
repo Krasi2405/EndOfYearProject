@@ -27,7 +27,7 @@ void UHealthComponent::BeginPlay() {
 	validate(MaxHealth > 0);
 }
 
-void UHealthComponent::TakeDamage(float Damage, APlayerController* LastDamagedByPlayer) {
+void UHealthComponent::TakeDamage(float Damage, AController* LastDamagedByPlayer) {
 	if (bDead) { return; }
 
 	Health -= Damage;
@@ -52,7 +52,7 @@ void UHealthComponent::SetHealth(float NewHealth) {
 }
 
 
-void UHealthComponent::SetDamager(APlayerController* Damager) {
+void UHealthComponent::SetDamager(AController* Damager) {
 	this->LastDamagedByPlayer = LastDamagedByPlayer;
 
 	UWorld* World = GetWorld();
@@ -84,7 +84,7 @@ void UHealthComponent::Heal(float HealingPower) {
 }
 
 
-APlayerController* UHealthComponent::GetLastDamagedBy() {
+AController* UHealthComponent::GetLastDamagedBy() {
 	return LastDamagedByPlayer;
 }
 

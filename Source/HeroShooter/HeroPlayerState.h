@@ -24,6 +24,10 @@ public:
 
 	int GetDeathCount();
 
+	void SetTeamIndex(int NewTeamIndex);
+
+	int GetTeamIndex();
+
 protected:
 
 	UPROPERTY(Replicated)
@@ -31,6 +35,12 @@ protected:
 
 	UPROPERTY(Replicated)
 	int DeathCount = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex, VisibleAnywhere)
+	int TeamIndex = -1;
+
+	UFUNCTION()
+	void OnRep_TeamIndex();
 
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;

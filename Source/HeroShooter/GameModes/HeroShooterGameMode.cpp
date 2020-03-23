@@ -14,6 +14,9 @@
 #include "HeroPlayerState.h"
 #include "MultiplayerGameInstance.h"
 #include "GameFramework/GameSession.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
+#include "AI/Controllers/EnemyAIController.h"
 
 
 AHeroShooterGameMode::AHeroShooterGameMode() {
@@ -29,30 +32,38 @@ void AHeroShooterGameMode::PostLogin(APlayerController* NewPlayer) {
 	AHeroPlayerController* HeroController = Cast<AHeroPlayerController>(NewPlayer);
 	if (validate(IsValid(HeroController)) == false) { return; }
 
+	AHeroPlayerState* HeroPlayerState = HeroController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
+
 	int TeamIndex = GetTeamIndexWithLeastPlayers();
 	if (validate(TeamIndex != -1) == false) { return; }
+	if (validate(Teams.Num() > TeamIndex) == false) { return; }
 
-	TArray<AHeroPlayerController*>* Team = Teams[TeamIndex];
+	TArray<AController*>* Team = Teams[TeamIndex];
 	if (validate(Team != nullptr) == false) { return; }
 
+	RemoveBot(TeamIndex);
 	Teams[TeamIndex]->Add(HeroController);
-	HeroController->SetTeamIndex(TeamIndex);
+	HeroPlayerState->SetTeamIndex(TeamIndex);
+
 }
 
 
 void AHeroShooterGameMode::Logout(AController* Exiting) {
 	Super::Logout(Exiting);
 
-	AHeroPlayerController* PlayerController = Cast<AHeroPlayerController>(Exiting);
-	if (validate(IsValid(PlayerController)) == false) { return; }
+	AHeroPlayerState* PlayerState = Exiting->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
 
-	int TeamIndex = PlayerController->GetTeamIndex();
+	int TeamIndex = PlayerState->GetTeamIndex();
 	if (validate(TeamIndex != -1) == false) { return; }
 
-	TArray<AHeroPlayerController*>* Team = Teams[TeamIndex];
+	TArray<AController*>* Team = Teams[TeamIndex];
 	if (validate(Team != nullptr) == false) { return; }
 
-	Team->Remove(PlayerController);
+	Team->Remove(Exiting);
+
+	AddBot(TeamIndex);
 }
 
 
@@ -74,8 +85,11 @@ void AHeroShooterGameMode::OnGameOverUpdateUserInfo(const FUniqueNetId& NetId, F
 	if (validate(IsValid(PlayerController)) == false) { return; }
 	if (validate(WinningTeamIndex.IsSet()) == false) { return; }
 
-	PlayerController->GetTeamIndex() == WinningTeamIndex.GetValue() ? UserInfo.Wins++ : UserInfo.Losses++;
-	UserInfo.Rating += GetDeltaRating(PlayerController);
+	AHeroPlayerState* PlayerState = PlayerController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+
+	PlayerState->GetTeamIndex() == WinningTeamIndex.GetValue() ? UserInfo.Wins++ : UserInfo.Losses++;
+	UserInfo.Rating += GetDeltaRating(PlayerState);
 
 
 	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
@@ -86,7 +100,7 @@ void AHeroShooterGameMode::OnGameOverUpdateUserInfo(const FUniqueNetId& NetId, F
 }
 
 
-int AHeroShooterGameMode::GetDeltaRating(AHeroPlayerController* PlayerController) {
+int AHeroShooterGameMode::GetDeltaRating(AHeroPlayerState* PlayerController) {
 	// TODO: calculate based on enemy and player rating.
 	if (validate(WinningTeamIndex.IsSet()) == false) { return 0; }
 
@@ -101,29 +115,37 @@ void AHeroShooterGameMode::InitGameState() {
 	if (validate(IsValid(GameState)) == false) { return; }
 
 	validate(GameState->GetTeamCount() > 0);
+	if (validate(IsValid(EnemyAIControllerTemplate)) == false) { return; }
+
 	for (int i = 0; i < GameState->GetTeamCount(); i++) {
-		Teams.Add(new TArray<AHeroPlayerController*>());
+		TArray<AController*>* Team = new TArray<AController*>();
+		int MaxPlayers = GameState->GetMaxPlayersInTeam();
+		for (int j = 0; j < MaxPlayers; j++) {
+			AddBot(i);
+		}
+		Teams.Add(Team);
 	}
 }
 
 
 
 int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
+	return 0;
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return -1; }
 
 	if (validate(GameState->GetTeamCount() > 0) == false) { return -1; }
+	if (validate(Teams.Num() >= 0) == false) { return -1; }
 	if (validate(Teams[0] != nullptr) == false) { return -1; }
 
 	int LeastTeamIndex = 0;
-	int LeastTeamCount = Teams[0]->Num();
+	int LeastTeamCount = GetPlayerCountInTeam(0);
 
 	for (int i = 1; i < Teams.Num(); i++) {
-		TArray<AHeroPlayerController*>* Team = Teams[i];
+		TArray<AController*>* Team = Teams[i];
 		if (validate(Team != nullptr) == false) { return -1; }
 
-		int PlayerCount = Team->Num();
-
+		int PlayerCount = GetPlayerCountInTeam(i);
 		if (LeastTeamCount > PlayerCount) {
 			LeastTeamIndex = i;
 			LeastTeamCount = PlayerCount;
@@ -133,6 +155,22 @@ int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
 	if (validate(Teams[LeastTeamIndex]->Num() < GameState->GetTeamCount()) == false) { return -1; }
 
 	return LeastTeamIndex;
+}
+
+
+int AHeroShooterGameMode::GetPlayerCountInTeam(int TeamIndex) {
+	if (validate(TeamIndex < Teams.Num()) == false) { return -1; }
+
+	TArray<AController*>* Team = Teams[TeamIndex];
+	int PlayerCount = 0;
+	for (int i = 0; i < Team->Num(); i++) {
+		APlayerController* PlayerController = Cast<APlayerController>(*(Team->GetData() + i));
+		if (IsValid(PlayerController)) {
+			PlayerCount++;
+		}
+	}
+
+	return PlayerCount;
 }
 
 
@@ -166,23 +204,25 @@ void AHeroShooterGameMode::ChangePlayerTeam(int TeamIndex, int PlayerIndex, int 
 	if (validate(TeamIndex != NewTeamIndex) == false) { return; }
 
 	if (validate(Teams.Num() > TeamIndex) == false) { return; }
-	TArray<AHeroPlayerController*>* Team = Teams[TeamIndex];
+	TArray<AController*>* Team = Teams[TeamIndex];
 
 	if (validate(Team->Num() > PlayerIndex) == false) { return; }
-	AHeroPlayerController* PlayerController = (*Team)[PlayerIndex];
+	AController* PlayerController = (*Team)[PlayerIndex];
 
 	if (validate(IsValid(PlayerController)) == false) { return; }
 	if (validate(Teams.Num() > NewTeamIndex) == false) { return; }
-	TArray<AHeroPlayerController*>* NewTeam = Teams[NewTeamIndex];
-
+	TArray<AController*>* NewTeam = Teams[NewTeamIndex];
 
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return; }
 	if (validate(NewTeam->Num() < GameState->GetTeamCount()) == false) { return; }
 
 	NewTeam->Add(PlayerController);
-	PlayerController->SetTeamIndex(NewTeamIndex);
 	Team->RemoveAt(PlayerIndex);
+
+	AHeroPlayerState* PlayerState = PlayerController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+	PlayerState->SetTeamIndex(NewTeamIndex);
 }
 
 
@@ -204,7 +244,7 @@ void AHeroShooterGameMode::TravelToMapInMapPool() {
 }
 
 
-void AHeroShooterGameMode::HandleDeath(AHeroPlayerController* PlayerController, AHeroPlayerController* Killer) {
+void AHeroShooterGameMode::HandleDeath(AController* PlayerController, AController* Killer) {
 	if (validate(IsValid(PlayerController)) == false) { return; }
 	AHeroPlayerState* PlayerState = PlayerController->GetPlayerState<AHeroPlayerState>();
 	if (validate(IsValid(PlayerState)) == false) { return; }
@@ -215,4 +255,37 @@ void AHeroShooterGameMode::HandleDeath(AHeroPlayerController* PlayerController, 
 		if (validate(IsValid(KillerPlayerState)) == false) { return; }
 		KillerPlayerState->AddKill();
 	}
+}
+
+
+
+void AHeroShooterGameMode::AddBot(int TeamIndex) {
+	if (validate(Teams.IsValidIndex(TeamIndex)) == false) { return; }
+	TArray<AController*>* Team = Teams[TeamIndex];
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	AEnemyAIController* EnemyAI = World->SpawnActor<AEnemyAIController>(EnemyAIControllerTemplate);
+	if (validate(IsValid(EnemyAI)) == false) { return; }
+	AHeroPlayerState* AIPlayerState = EnemyAI->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(AIPlayerState)) == false) { return; }
+	AIPlayerState->SetTeamIndex(TeamIndex);
+
+	Team->Add(EnemyAI);
+}
+
+void AHeroShooterGameMode::RemoveBot(int TeamIndex) {
+	if (validate(Teams.IsValidIndex(TeamIndex)) == false) { return; }
+
+	TArray<AController*>* Team = Teams[TeamIndex];
+	for (int i = 0; i < Team->Num(); i++) {
+		AAIController* AIController = Cast<AAIController>(*(Team->GetData() + i));
+		if (IsValid(AIController)) {
+			Team->Remove(AIController);
+			AIController->Destroy();
+			return;
+		}
+	}
+	validate(false);
 }

@@ -27,7 +27,7 @@ public:
 
 	void SpawnHeroPreview(TSubclassOf<ABaseCharacter> Hero);
 
-	void SpawnHero(APlayerController* Player, TSubclassOf<ABaseCharacter> Hero);
+	void SpawnHero(AController* Player, TSubclassOf<ABaseCharacter> Hero);
 
 	FVector GetCameraSpotLocation();
 

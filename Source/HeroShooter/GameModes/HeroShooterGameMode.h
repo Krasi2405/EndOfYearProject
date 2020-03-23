@@ -6,8 +6,11 @@
 #include "GameFramework/GameMode.h"
 #include "HeroShooterGameMode.generated.h"
 
+class AController;
 class AHeroPlayerController;
+class AHeroPlayerState;
 class UDataTable;
+class AEnemyAIController;
 
 /**
  * 
@@ -21,9 +24,9 @@ public:
 	
 	AHeroShooterGameMode();
 
-	TArray<AHeroPlayerController*> GetTeamPlayerList(int TeamIndex);
+	TArray<AController*> GetTeamPlayerList(int TeamIndex);
 
-	virtual void HandleDeath(AHeroPlayerController* PlayerController, AHeroPlayerController* Killer);
+	virtual void HandleDeath(AController* PlayerController, AController* Killer);
 
 protected:
 
@@ -44,6 +47,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	UDataTable* MapPoolDataTable;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AEnemyAIController> EnemyAIControllerTemplate;
+
 	virtual void BeginPlay() override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -56,14 +62,22 @@ protected:
 
 	void TravelToMapInMapPool();
 
-	TArray<TArray<AHeroPlayerController*>*> Teams = TArray<TArray<AHeroPlayerController*>*>();
+	TArray<TArray<AController*>*> Teams = TArray<TArray<AController*>*>();
 	
 	int GetTeamIndexWithLeastPlayers();
+
+	int GetPlayerCountInTeam(int TeamIndex);
 
 	UFUNCTION(Exec)
 	void ChangePlayerTeam(int TeamIndex, int PlayerIndex, int NewTeam);
 
-	virtual int GetDeltaRating(AHeroPlayerController* PlayerController);
+	virtual int GetDeltaRating(AHeroPlayerState* PlayerController);
+
+	UFUNCTION(Exec)
+	void AddBot(int TeamIndex);
+
+	UFUNCTION(Exec)
+	void RemoveBot(int TeamIndex);
 
 	int BaseDeltaRating = 20;
 };

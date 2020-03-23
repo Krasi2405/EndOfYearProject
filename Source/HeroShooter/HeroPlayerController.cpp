@@ -200,15 +200,6 @@ void AHeroPlayerController::SetTeamIndex(int NewTeamIndex) {
 }
 
 
-int AHeroPlayerController::GetTeamIndex() {
-	return TeamIndex;
-}
-
-
-void AHeroPlayerController::OnRep_TeamIndex() {
-	SetTeamIndex(TeamIndex);
-}
-
 
 void AHeroPlayerController::TeleportSpectatorToHeroPicker() {
 	if (validate(IsValid(TeamSpawner)) == false) { return; }
@@ -256,12 +247,6 @@ void AHeroPlayerController::TeamSetup() {
 	LastTeamSetupIndex = TeamIndex;
 }
 
-void AHeroPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AHeroPlayerController, TeamIndex);
-}
-
 
 void AHeroPlayerController::ChooseHero(TSubclassOf<ABaseCharacter> Hero) {
 	ServerSpawnHero(Hero);
@@ -296,9 +281,4 @@ void AHeroPlayerController::HandleWinCondition(int WinningTeamIndex) {
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
 	WinningTeamIndex == TeamIndex ? IngameHUD->ShowWinningDisplay() : IngameHUD->ShowLosingDisplay();
-}
-
-
-void AHeroPlayerController::ActivateAbility(int AbilityIndex) {
-
 }
