@@ -53,6 +53,8 @@ protected:
 	// Only called on server.
 	virtual void OnPossess(class APawn* Pawn) override;
 
+	virtual void OnUnPossess() override;
+
 	virtual void SetupInputComponent() override;
 
 
@@ -99,5 +101,16 @@ protected:
 
 	UFUNCTION()
 	void HandleWinCondition(int WinningTeamIndex);
+
+
+	UFUNCTION()
+	void OnEnterSpawnArea();
+
+	UFUNCTION()
+	void OnExitSpawnArea();
+
+	bool bCanSwitchHero = false;
+
+	void SwitchHero();
 
 };

@@ -80,6 +80,11 @@ void AHeroPlayerController::OnPossess(APawn* Pawn) {
 }
 
 
+void AHeroPlayerController::OnUnPossess() {
+	Super::OnUnPossess();
+}
+
+
 void AHeroPlayerController::ServerHandleDeath() {
 	if (validate(HasAuthority()) == false) { return; }
 	UE_LOG(LogTemp, Warning, TEXT("%s has died!"), *GetName());
@@ -137,6 +142,7 @@ void AHeroPlayerController::SetupInputComponent() {
 	InputComponent->BindAction(FName("ToggleIngameMenu"), IE_Pressed, this, &AHeroPlayerController::ToggleIngameMenu);
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
 
+	InputComponent->BindAction(FName("SwitchHero"), IE_Pressed, this, &AHeroPlayerController::SwitchHero);
 }
 
 
@@ -241,6 +247,8 @@ void AHeroPlayerController::TeamSetup() {
 		if (validate(IsValid(HeroPicker)) == false) { return; }
 		if (validate(IsValid(TeamSpawner)) == false) { return; }
 		TeamSpawner->Setup(this);
+		TeamSpawner->OnPlayerEnter.AddDynamic(this, &AHeroPlayerController::OnEnterSpawnArea);
+		TeamSpawner->OnPlayerExit.AddDynamic(this, &AHeroPlayerController::OnExitSpawnArea);
 		HeroPicker->Setup(TeamSpawner);
 		TeleportSpectatorToHeroPicker();
 	}
@@ -281,4 +289,39 @@ void AHeroPlayerController::HandleWinCondition(int WinningTeamIndex) {
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
 	WinningTeamIndex == TeamIndex ? IngameHUD->ShowWinningDisplay() : IngameHUD->ShowLosingDisplay();
+}
+
+
+
+void AHeroPlayerController::OnEnterSpawnArea() {
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	IngameHUD->ShowHint("Press H to switch hero");
+	bCanSwitchHero = true;
+}
+
+void AHeroPlayerController::OnExitSpawnArea() {
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	IngameHUD->HideHint();
+	bCanSwitchHero = false;
+}
+
+
+void AHeroPlayerController::SwitchHero() {
+	if (bCanSwitchHero == false) { return; }
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	IngameHUD->HideHint();
+
+	ABaseCharacter* Character = Cast<ABaseCharacter>(GetCharacter());
+	if (validate(IsValid(Character)) == false) { return; }
+
+	Character->Destroy();
+
+	UnPossess();
+	ActivateHeroPicker();
 }

@@ -14,6 +14,7 @@ class UHeroPickerMenu;
 class UGameModeInfoWidget;
 class UUserWidget;
 class UHeroInfoWidget;
+class UHintWidget;
 class AHeroShooterGameState;
 
 /**
@@ -58,6 +59,11 @@ public:
 
 	void ShowLosingDisplay();
 
+
+	void ShowHint(FString Hint);
+
+	void HideHint();
+
 protected:
 
 	UPROPERTY()
@@ -88,6 +94,7 @@ protected:
 	UPROPERTY(EditDefaultsONly)
 	TSubclassOf<UHeroPickerMenu> HeroPickerClass;
 
+	UPROPERTY()
 	UHeroPickerMenu* HeroPicker = nullptr;
 
 
@@ -96,6 +103,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UUserWidget> LosingTeamMessageWidget;
+
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UHintWidget> HintTemplate;
+
+
+	UPROPERTY()
+	UHintWidget* HintWidget = nullptr;
 
 
 	void SetInputSettings(const FInputModeDataBase& InputModeSettings, bool bShowMouse);

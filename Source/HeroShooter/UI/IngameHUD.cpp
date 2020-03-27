@@ -3,6 +3,7 @@
 
 #include "IngameHUD.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerController.h"
 
 #include "IngameMenu.h"
 #include "ChatBox.h"
@@ -10,7 +11,7 @@
 #include "CustomMacros.h"
 #include "GameModes/GameModeInfoWidget.h"
 #include "GameModes/HeroShooterGameState.h"
-#include "GameFramework/PlayerController.h"
+#include "HintWidget.h"
 #include "HeroInfoWidget.h"
 
 void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
@@ -151,11 +152,29 @@ void AIngameHUD::ShowLosingDisplay() {
 }
 
 
-
 void AIngameHUD::SetInputSettings(const FInputModeDataBase& InputModeSettings, bool bShowMouse) {
 	APlayerController* PlayerController = GetOwningPlayerController();
 	if (validate(IsValid(PlayerController)) == false) { return; }
 
 	PlayerController->bShowMouseCursor = bShowMouse;
 	PlayerController->SetInputMode(InputModeSettings);
+}
+
+
+void AIngameHUD::ShowHint(FString Hint) {
+	if (IsValid(HintWidget) == false) {
+		if (validate(IsValid(HintTemplate)) == false) { return; }
+		HintWidget = CreateWidget<UHintWidget>(GetOwningPlayerController(), HintTemplate);
+		if (validate(IsValid(HintWidget)) == false) { return; }
+		HintWidget->AddToViewport();
+	}
+	HintWidget->SetVisibility(ESlateVisibility::Visible);
+	HintWidget->SetHint(Hint);
+}
+
+
+void AIngameHUD::HideHint() {
+	if (validate(IsValid(HintWidget))) {
+		HintWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }

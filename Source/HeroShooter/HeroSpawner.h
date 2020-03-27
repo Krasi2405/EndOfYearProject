@@ -6,6 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "HeroSpawner.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEnterSpawn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerExitSpawn);
+
+
 class UDataTable;
 class APlayerController;
 class ABaseCharacter;
@@ -33,9 +38,19 @@ public:
 
 	FRotator GetCameraSpotLookAtRotation();
 
+	FOnPlayerEnterSpawn OnPlayerEnter;
+
+	FOnPlayerExitSpawn OnPlayerExit;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnEnterSpawnArea(AActor* OverlappedActor, AActor* OtherActor);
+
+	UFUNCTION()
+	void OnExitSpawnArea(AActor* OverlappedActor, AActor* OtherActor);
 
 	UPROPERTY(EditInstanceOnly)
 	int TeamIndex = -1;

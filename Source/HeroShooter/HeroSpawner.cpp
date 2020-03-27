@@ -30,6 +30,9 @@ void AHeroSpawner::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("%s has no team index set!"), *GetName());
 		return; 
 	}
+
+	SpawnLocation->OnActorBeginOverlap.AddDynamic(this, &AHeroSpawner::OnEnterSpawnArea);
+	SpawnLocation->OnActorEndOverlap.AddDynamic(this, &AHeroSpawner::OnExitSpawnArea);
 }
 
 
@@ -113,4 +116,34 @@ FRotator AHeroSpawner::GetCameraSpotLookAtRotation() {
 
 int AHeroSpawner::GetTeamIndex() {
 	return TeamIndex;
+}
+
+
+
+void AHeroSpawner::OnEnterSpawnArea(AActor* OverlappedActor, AActor* OtherActor) {
+	UE_LOG(LogTemp, Warning, TEXT("Enter Spawn Area. Overlapped Actor: %s, Other Actor: %s"), 
+		*OverlappedActor->GetName(), *OtherActor->GetName());
+	
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
+	if (IsValid(BaseCharacter) == false) { return; }
+	
+	APlayerController* OtherController = Cast<APlayerController>(BaseCharacter->GetController());
+	if (IsValid(OtherController) == false) { return; }
+
+	if (OtherController == LocalPlayerController) {
+		OnPlayerEnter.Broadcast();
+	}
+}
+
+
+void AHeroSpawner::OnExitSpawnArea(AActor* OverlappedActor, AActor* OtherActor) {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
+	if (IsValid(BaseCharacter) == false) { return; }
+
+	APlayerController* OtherController = Cast<APlayerController>(BaseCharacter->GetController());
+	if (IsValid(OtherController) == false) { return; }
+
+	if (OtherController == LocalPlayerController) {
+		OnPlayerExit.Broadcast();
+	}
 }

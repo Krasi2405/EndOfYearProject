@@ -7,5 +7,5 @@
 
 void UHintWidget::SetHint(FString HintText) {
 	if (validate(IsValid(Hint)) == false) { return; }
-	Hint->Text = FText::FromString(HintText);
+	Hint->SetText(FText::FromString(HintText));
 }
