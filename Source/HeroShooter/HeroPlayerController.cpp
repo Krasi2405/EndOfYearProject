@@ -15,6 +15,7 @@
 #include "UI/ChatBox.h"
 #include "UI/HeroPickerMenu.h"
 #include "UI/HeroInfoWidget.h"
+#include "UI/StatisticsTab.h"
 #include "CustomMacros.h"
 #include "BaseCharacter.h"
 #include "HeroSpawner.h"
@@ -111,6 +112,7 @@ void AHeroPlayerController::BeginPlay() {
 	if (IsLocalController()) {
 		UWorld* World = GetWorld();
 		if (validate(IsValid(World)) == false) { return; }
+
 		AHeroShooterGameState* GameState = World->GetGameState<AHeroShooterGameState>();
 		if (validate(IsValid(GameState)) == false) { return; }
 		GameState->OnWinConditionSent.AddDynamic(this, &AHeroPlayerController::HandleWinCondition);
@@ -118,6 +120,8 @@ void AHeroPlayerController::BeginPlay() {
 		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
 		if (validate(IsValid(IngameHUD)) == false) { return; }
 		IngameHUD->SetupWidgets(GameState);
+
+
 
 		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
 		if (validate(IsValid(HeroPicker)) == false) { return; }
@@ -143,6 +147,9 @@ void AHeroPlayerController::SetupInputComponent() {
 	InputComponent->BindAction(FName("ToggleChat"), IE_Pressed, this, &AHeroPlayerController::ToggleChat);
 
 	InputComponent->BindAction(FName("SwitchHero"), IE_Pressed, this, &AHeroPlayerController::SwitchHero);
+
+	InputComponent->BindAction(FName("ShowStats"), IE_Pressed, this, &AHeroPlayerController::ShowStats);
+	InputComponent->BindAction(FName("ShowStats"), IE_Released, this, &AHeroPlayerController::HideStats);
 }
 
 
@@ -324,4 +331,18 @@ void AHeroPlayerController::SwitchHero() {
 
 	UnPossess();
 	ActivateHeroPicker();
+}
+
+
+void AHeroPlayerController::ShowStats() {
+	AIngameHUD* HUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(HUD)) == false) { return; }
+	HUD->ShowStatisticsTab();
+}
+
+
+void AHeroPlayerController::HideStats() {
+	AIngameHUD* HUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(HUD)) == false) { return; }
+	HUD->HideStatisticsTab();
 }

@@ -12,36 +12,34 @@
 #include "GameModes/GameModeInfoWidget.h"
 #include "GameModes/HeroShooterGameState.h"
 #include "HintWidget.h"
+#include "StatisticsTab.h"
 #include "HeroInfoWidget.h"
 
+
 void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
-	APlayerController* PlayerController = GetOwningPlayerController();
-	if (validate(IsValid(PlayerController)) == false) { return; }
-
 	TSubclassOf<UGameModeInfoWidget> InfoWidgetTemplate = HeroShooterGameState->GetInfoWidgetTemplate();
-	if (validate(IsValid(InfoWidgetTemplate)) == false) { return; }
-	GameModeInfoWidget = CreateWidget<UGameModeInfoWidget>(PlayerController, InfoWidgetTemplate);
-	if (validate(IsValid(GameModeInfoWidget)) == false) { return; }
-	GameModeInfoWidget->AddToViewport();
-	GameModeInfoWidget->Setup(HeroShooterGameState);
+	GameModeInfoWidget = SpawnWidget<UGameModeInfoWidget>(InfoWidgetTemplate);
 
+	ChatBox = SpawnWidget<UChatBox>(ChatBoxTemplate);
+	if (validate(IsValid(ChatBox))) {
+		CloseChat();
+	}
 
-	if (validate(IsValid(ChatBoxClass)) == false) { return; }
-	ChatBox = CreateWidget<UChatBox>(PlayerController, ChatBoxClass);
-	if (validate(IsValid(ChatBox)) == false) { return; }
-	ChatBox->AddToViewport();
-	CloseChat();
+	HeroPicker = SpawnWidget<UHeroPickerMenu>(HeroPickerTemplate);
+	validate(IsValid(HeroPicker));
 
-	if (validate(IsValid(HeroPickerClass)) == false) { return; }
-	HeroPicker = CreateWidget<UHeroPickerMenu>(PlayerController, HeroPickerClass);
-	if (validate(IsValid(HeroPicker)) == false) { return; }
-	HeroPicker->AddToViewport();
+	HeroInfo = SpawnWidget<UHeroInfoWidget>(HeroInfoTemplate);
+	validate(IsValid(HeroInfo));
 
+	HintWidget = SpawnWidget<UHintWidget>(HintTemplate);
+	if (validate(IsValid(HintWidget))) {
+		HideHint();
+	}
 
-	if (validate(IsValid(HeroInfoTemplate)) == false) { return; }
-	HeroInfo = CreateWidget<UHeroInfoWidget>(PlayerController, HeroInfoTemplate);
-	if (validate(IsValid(HeroInfo)) == false) { return; }
-	HeroInfo->AddToViewport();
+	StatisticsTab = SpawnWidget<UStatisticsTab>(StatisticsTabTemplate);
+	if (validate(IsValid(StatisticsTab))) {
+		HideStatisticsTab();
+	}
 }
 
 
@@ -52,6 +50,11 @@ UHeroInfoWidget* AIngameHUD::GetHeroInfoWidget() {
 
 UGameModeInfoWidget* AIngameHUD::GetGameModeInfoWidget() {
 	return GameModeInfoWidget;
+}
+
+
+UStatisticsTab* AIngameHUD::GetStatisticsTab() {
+	return StatisticsTab;
 }
 
 
@@ -131,24 +134,12 @@ void AIngameHUD::DeactivateIngameMenu() {
 
 
 void AIngameHUD::ShowWinningDisplay() {
-	APlayerController* PlayerController = GetOwningPlayerController();
-	if (validate(IsValid(PlayerController)) == false) { return; }
-
-	if (validate(IsValid(WinningTeamMessageWidget)) == false) { return; }
-	UUserWidget* WinningDisplay = CreateWidget(PlayerController, WinningTeamMessageWidget);
-	if (validate(IsValid(WinningDisplay)) == false) { return; }
-	WinningDisplay->AddToViewport();
+	validate(SpawnWidget<UUserWidget>(WinningTeamMessageWidget) != nullptr);
 }
 
 
 void AIngameHUD::ShowLosingDisplay() {
-	APlayerController* PlayerController = GetOwningPlayerController();
-	if (validate(IsValid(PlayerController)) == false) { return; }
-
-	if (validate(IsValid(LosingTeamMessageWidget)) == false) { return; }
-	UUserWidget* LosingDisplay = CreateWidget(PlayerController, LosingTeamMessageWidget);
-	if (validate(IsValid(LosingDisplay)) == false) { return; }
-	LosingDisplay->AddToViewport();
+	validate(SpawnWidget<UUserWidget>(LosingTeamMessageWidget) != nullptr);
 }
 
 
@@ -162,19 +153,55 @@ void AIngameHUD::SetInputSettings(const FInputModeDataBase& InputModeSettings, b
 
 
 void AIngameHUD::ShowHint(FString Hint) {
-	if (IsValid(HintWidget) == false) {
-		if (validate(IsValid(HintTemplate)) == false) { return; }
-		HintWidget = CreateWidget<UHintWidget>(GetOwningPlayerController(), HintTemplate);
-		if (validate(IsValid(HintWidget)) == false) { return; }
-		HintWidget->AddToViewport();
-	}
+	if (IsValid(HintWidget) == false) { return;  }
+
 	HintWidget->SetVisibility(ESlateVisibility::Visible);
 	HintWidget->SetHint(Hint);
 }
 
 
 void AIngameHUD::HideHint() {
-	if (validate(IsValid(HintWidget))) {
-		HintWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	HideWidget(HintWidget);
 }
+
+
+void AIngameHUD::ShowStatisticsTab() {
+	ShowWidget(StatisticsTab);
+}
+
+
+void AIngameHUD::HideStatisticsTab() {
+	HideWidget(StatisticsTab);
+}
+
+
+void AIngameHUD::ShowWidget(UUserWidget* UserWidget) {
+	if (ensure(IsValid(UserWidget)) == false) { return; }
+	UserWidget->SetVisibility(ESlateVisibility::Visible);
+}
+
+
+void AIngameHUD::HideWidget(UUserWidget* UserWidget) {
+	if (ensure(IsValid(HintWidget)) == false) { return; }
+	UserWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+template <typename WidgetClass>
+WidgetClass* AIngameHUD::SpawnWidget(TSubclassOf<UUserWidget> WidgetTemplate) {
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if (validate(IsValid(PlayerController)) == false) { return nullptr; }
+
+	UUserWidget* UserWidget = nullptr;
+	if (validate(IsValid(WidgetTemplate)) == false) { return nullptr; }
+	UserWidget = CreateWidget(PlayerController, WidgetTemplate);
+
+	if (validate(IsValid(UserWidget)) == false) { return nullptr; }
+	UserWidget->AddToViewport();
+
+	WidgetClass* Widget = Cast<WidgetClass>(UserWidget);
+	if (validate(IsValid(Widget)) == false) { return nullptr; }
+
+	return Widget;
+}
+
+

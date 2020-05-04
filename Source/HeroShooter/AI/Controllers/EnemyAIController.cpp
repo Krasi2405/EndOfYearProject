@@ -77,3 +77,13 @@ void AEnemyAIController::OnPossess(APawn* Pawn) {
 	bool bSuccess = RunBehaviorTree(BehaviorTree);
 	if (validate(bSuccess) == false) { return; }
 }
+
+
+void AEnemyAIController::Destroyed() {
+	Super::Destroyed();
+
+	ABaseCharacter* Character = Cast<ABaseCharacter>(GetPawn());
+	if (IsValid(Character)) {
+		Character->Destroy();
+	}
+}

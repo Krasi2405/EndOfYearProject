@@ -15,6 +15,7 @@ class UGameModeInfoWidget;
 class UUserWidget;
 class UHeroInfoWidget;
 class UHintWidget;
+class UStatisticsTab;
 class AHeroShooterGameState;
 
 /**
@@ -36,6 +37,10 @@ public:
 
 
 	UHeroPickerMenu* GetHeroPicker();
+
+
+	UStatisticsTab* GetStatisticsTab();
+
 
 	void ActivateHeroPicker();
 
@@ -64,6 +69,11 @@ public:
 
 	void HideHint();
 
+	
+	void ShowStatisticsTab();
+
+	void HideStatisticsTab();
+
 protected:
 
 	UPROPERTY()
@@ -85,14 +95,14 @@ protected:
 
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UChatBox> ChatBoxClass;
+	TSubclassOf<UChatBox> ChatBoxTemplate;
 
 	UPROPERTY()
 	UChatBox* ChatBox = nullptr;
 
 
 	UPROPERTY(EditDefaultsONly)
-	TSubclassOf<UHeroPickerMenu> HeroPickerClass;
+	TSubclassOf<UHeroPickerMenu> HeroPickerTemplate;
 
 	UPROPERTY()
 	UHeroPickerMenu* HeroPicker = nullptr;
@@ -108,10 +118,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UHintWidget> HintTemplate;
 
-
 	UPROPERTY()
 	UHintWidget* HintWidget = nullptr;
 
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UStatisticsTab> StatisticsTabTemplate;
+
+	UPROPERTY()
+	UStatisticsTab* StatisticsTab;
+
+
 	void SetInputSettings(const FInputModeDataBase& InputModeSettings, bool bShowMouse);
+
+	void ShowWidget(UUserWidget* UserWidget);
+
+	void HideWidget(UUserWidget* UserWidget);
+
+	template <typename WidgetClass>
+	WidgetClass* SpawnWidget(TSubclassOf<UUserWidget> WidgetTemplate);
 };

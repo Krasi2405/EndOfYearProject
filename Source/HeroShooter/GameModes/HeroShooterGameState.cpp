@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
+#include "HeroPlayerState.h"
 #include "HeroSpawner.h"
 #include "CustomMacros.h"
 
@@ -30,4 +31,21 @@ int AHeroShooterGameState::GetTeamCount() {
 
 int AHeroShooterGameState::GetMaxPlayersInTeam() {
 	return MaxPlayersInTeam;
+}
+
+
+void AHeroShooterGameState::AddPlayerState(APlayerState* PlayerState) {
+	Super::AddPlayerState(PlayerState);
+
+	AHeroPlayerState* HeroPlayerState = Cast<AHeroPlayerState>(PlayerState);
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
+	OnAddPlayer.Broadcast(HeroPlayerState);
+}
+
+void AHeroShooterGameState::RemovePlayerState(APlayerState* PlayerState) {
+	Super::RemovePlayerState(PlayerState);
+
+	AHeroPlayerState* HeroPlayerState = Cast<AHeroPlayerState>(PlayerState);
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
+	OnRemovePlayer.Broadcast(HeroPlayerState);
 }

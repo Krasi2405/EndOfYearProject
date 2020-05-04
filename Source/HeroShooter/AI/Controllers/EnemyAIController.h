@@ -35,6 +35,8 @@ protected:
 
 	virtual void OnPossess(class APawn* Pawn) override;
 
+	virtual void Destroyed() override;
+
 	UPROPERTY(EditDefaultsOnly)
 	UDataTable* HeroListTable;
 

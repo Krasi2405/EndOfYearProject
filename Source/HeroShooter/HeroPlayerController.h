@@ -113,4 +113,10 @@ protected:
 
 	void SwitchHero();
 
+	UFUNCTION()
+	void ShowStats();
+
+	UFUNCTION()
+	void HideStats();
+
 };

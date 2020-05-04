@@ -30,12 +30,6 @@ public:
 
 protected:
 
-	UPROPERTY(EditDefaultsOnly)
-	int TeamCount = 3;
-
-	UPROPERTY(EditDefaultsOnly)
-	int MaxPlayersInTeam = 2;
-
 	UFUNCTION(Exec)
 	void TeamWin(int TeamIndex);
 

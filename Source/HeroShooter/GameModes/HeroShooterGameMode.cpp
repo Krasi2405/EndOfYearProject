@@ -42,6 +42,7 @@ void AHeroShooterGameMode::PostLogin(APlayerController* NewPlayer) {
 	TArray<AController*>* Team = Teams[TeamIndex];
 	if (validate(Team != nullptr) == false) { return; }
 
+	UE_LOG(LogTemp, Warning, TEXT("Call Remove Bot With Team Index %d"), TeamIndex);
 	RemoveBot(TeamIndex);
 	Teams[TeamIndex]->Add(HeroController);
 	HeroPlayerState->SetTeamIndex(TeamIndex);
@@ -63,6 +64,7 @@ void AHeroShooterGameMode::Logout(AController* Exiting) {
 
 	Team->Remove(Exiting);
 
+	UE_LOG(LogTemp, Warning, TEXT("Logout"))
 	AddBot(TeamIndex);
 }
 
@@ -120,17 +122,16 @@ void AHeroShooterGameMode::InitGameState() {
 	for (int i = 0; i < GameState->GetTeamCount(); i++) {
 		TArray<AController*>* Team = new TArray<AController*>();
 		int MaxPlayers = GameState->GetMaxPlayersInTeam();
+		Teams.Add(Team);
 		for (int j = 0; j < MaxPlayers; j++) {
 			AddBot(i);
 		}
-		Teams.Add(Team);
 	}
 }
 
 
 
 int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
-	return 0;
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return -1; }
 
@@ -152,7 +153,7 @@ int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
 		}
 	}
 
-	if (validate(Teams[LeastTeamIndex]->Num() < GameState->GetTeamCount()) == false) { return -1; }
+	if (validate(GetPlayerCountInTeam(LeastTeamIndex) < GameState->GetMaxPlayersInTeam()) == false) { return -1; }
 
 	return LeastTeamIndex;
 }
@@ -162,6 +163,7 @@ int AHeroShooterGameMode::GetPlayerCountInTeam(int TeamIndex) {
 	if (validate(TeamIndex < Teams.Num()) == false) { return -1; }
 
 	TArray<AController*>* Team = Teams[TeamIndex];
+	if (validate(Team != nullptr) == false) { return -1; }
 	int PlayerCount = 0;
 	for (int i = 0; i < Team->Num(); i++) {
 		APlayerController* PlayerController = Cast<APlayerController>(*(Team->GetData() + i));
@@ -262,9 +264,14 @@ void AHeroShooterGameMode::HandleDeath(AController* PlayerController, AControlle
 void AHeroShooterGameMode::AddBot(int TeamIndex) {
 	if (validate(Teams.IsValidIndex(TeamIndex)) == false) { return; }
 	TArray<AController*>* Team = Teams[TeamIndex];
+	if (validate(Team != nullptr) == false) { return; }
 
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
+	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
+	if (validate(IsValid(GameState)) == false) { return; }
+	if (validate(Team->Num() < GameState->GetMaxPlayersInTeam()) == false) { return; }
+	UE_LOG(LogTemp, Warning, TEXT("Add Bot to team %d with %d players"), TeamIndex, Team->Num());
 
 	AEnemyAIController* EnemyAI = World->SpawnActor<AEnemyAIController>(EnemyAIControllerTemplate);
 	if (validate(IsValid(EnemyAI)) == false) { return; }

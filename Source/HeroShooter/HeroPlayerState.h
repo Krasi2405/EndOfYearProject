@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerState.h"
 #include "HeroPlayerState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTeamChange, AHeroPlayerState*, HeroPlayerState);
+
 /**
  * 
  */
@@ -28,12 +30,14 @@ public:
 
 	int GetTeamIndex();
 
+	FOnTeamChange OnTeamChange;
+
 protected:
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_Stats)
 	int KillCount = 0;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_Stats)
 	int DeathCount = 0;
 
 	UPROPERTY(ReplicatedUsing = OnRep_TeamIndex, VisibleAnywhere)
@@ -42,6 +46,9 @@ protected:
 	UFUNCTION()
 	void OnRep_TeamIndex();
 
+	UFUNCTION()
+	void OnRep_Stats();
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+
 };

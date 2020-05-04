@@ -7,6 +7,9 @@
 #include "HeroPlayerController.h"
 #include "CustomMacros.h"
 #include "UnrealNetwork.h"
+#include "GameFramework/GameStateBase.h"
+#include "UI/IngameHUD.h"
+#include "UI/StatisticsTab.h"
 
 void AHeroPlayerState::AddKill() {
 	KillCount += 1;
@@ -26,8 +29,9 @@ int AHeroPlayerState::GetDeathCount() {
 
 
 void AHeroPlayerState::SetTeamIndex(int NewTeamIndex) {
+	if (TeamIndex == NewTeamIndex) { return; }
 	TeamIndex = NewTeamIndex;
-	
+
 	if (bIsABot == false) {
 		UWorld* World = GetWorld();
 		if (validate(IsValid(World)) == false) { return; }
@@ -39,6 +43,8 @@ void AHeroPlayerState::SetTeamIndex(int NewTeamIndex) {
 		if (IsValid(HeroPlayerController) && HeroPlayerController->IsLocalController()) {
 			HeroPlayerController->SetTeamIndex(NewTeamIndex);
 		}
+
+		OnTeamChange.Broadcast(this);
 	}
 }
 
@@ -49,8 +55,12 @@ int AHeroPlayerState::GetTeamIndex() {
 
 
 void AHeroPlayerState::OnRep_TeamIndex() {
-	UE_LOG(LogTemp, Warning, TEXT("OnRep_TeamIndex()"));
 	SetTeamIndex(TeamIndex);
+}
+
+
+void AHeroPlayerState::OnRep_Stats() {
+
 }
 
 
