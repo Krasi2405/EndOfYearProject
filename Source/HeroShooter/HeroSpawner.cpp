@@ -7,8 +7,11 @@
 #include "Engine/World.h"
 #include "Engine/TriggerVolume.h"
 
+#include "GameModes/HeroShooterGameState.h"
 #include "HeroPlayerController.h"
 #include "BaseCharacter.h"
+#include "HeroTableRow.h"
+#include "HeroPlayerState.h"
 #include "CustomMacros.h"
 
 
@@ -101,6 +104,27 @@ void AHeroSpawner::SpawnHero(AController* Controller, TSubclassOf<ABaseCharacter
 	if (validate(IsValid(Controller)) == false) { return; }
 
 	Controller->Possess(Hero);
+	
+	AHeroPlayerState* PlayerState = Cast<AHeroPlayerState>(Controller->PlayerState);
+	if (validate(IsValid(PlayerState)) == false) { return; }
+
+	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
+	if (validate(IsValid(GameState)) == false) { return; }
+	
+	UDataTable* HeroListTable = GameState->GetHeroList();
+	if (validate(IsValid(HeroListTable)) == false) { return; }
+
+	TArray<FHeroListTableRow*> Heroes;
+	HeroListTable->GetAllRows<FHeroListTableRow>(TEXT("GENERAL"), Heroes);
+
+	for (int i = 0; i < Heroes.Num(); i++) {
+		if (HeroTemplate == Heroes[i]->Asset) {
+			PlayerState->SetPortrait(i);
+			return;
+		}
+	}
+	validate(false);
+	// TODO: FIx with actual architecture of getting heroes.
 }
 
 
@@ -117,7 +141,6 @@ FRotator AHeroSpawner::GetCameraSpotLookAtRotation() {
 int AHeroSpawner::GetTeamIndex() {
 	return TeamIndex;
 }
-
 
 
 void AHeroSpawner::OnEnterSpawnArea(AActor* OverlappedActor, AActor* OtherActor) {

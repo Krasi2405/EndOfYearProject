@@ -3,6 +3,7 @@
 
 #include "StatisticsTabItem.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 #include "HeroPlayerState.h"
 
 
@@ -12,6 +13,10 @@ void UStatisticsTabItem::Setup(AHeroPlayerState* HeroPlayerState) {
 
 	UpdateStats(HeroPlayerState->GetKillCount(), HeroPlayerState->GetDeathCount(), 0);
 	UpdateUsername(HeroPlayerState->GetPlayerName());
+
+	HeroPlayerState->OnStatsChange.AddDynamic(this, &UStatisticsTabItem::UpdateStats);
+	HeroPlayerState->OnUsernameChange.AddDynamic(this, &UStatisticsTabItem::UpdateUsername);
+	HeroPlayerState->OnPortraitChange.AddDynamic(this, &UStatisticsTabItem::UpdatePlayerPortrait);
 }
 
 
@@ -27,6 +32,6 @@ void UStatisticsTabItem::UpdateUsername(FString Username) {
 }
 
 
-void UStatisticsTabItem::UpdatePlayerPortrait(UTexture2D* Portrait) {
-
+void UStatisticsTabItem::UpdatePlayerPortrait(UTexture2D* PortraitTexture) {
+	Portrait->SetBrushFromTexture(PortraitTexture);
 }

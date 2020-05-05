@@ -84,6 +84,11 @@ void AEnemyAIController::Destroyed() {
 
 	ABaseCharacter* Character = Cast<ABaseCharacter>(GetPawn());
 	if (IsValid(Character)) {
+		UE_LOG(LogTemp, Warning, TEXT("Destroy AI Character"))
 		Character->Destroy();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Destroying AIController with no character"))
 	}
 }

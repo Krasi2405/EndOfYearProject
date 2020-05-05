@@ -64,6 +64,7 @@ void UStatisticsTab::AddPlayer(AHeroPlayerState* HeroPlayerState) {
 
 
 void UStatisticsTab::RemovePlayer(AHeroPlayerState* HeroPlayerState) {
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
 	UStatisticsTabItem* InfoWidget = nullptr;
 	StateParentMap.RemoveAndCopyValue(HeroPlayerState, InfoWidget);
 	if (validate(IsValid(InfoWidget)) == false) { return; }
@@ -73,6 +74,7 @@ void UStatisticsTab::RemovePlayer(AHeroPlayerState* HeroPlayerState) {
 
 
 void UStatisticsTab::HandleTeamChange(AHeroPlayerState* HeroPlayerState) {
+	if (validate(IsValid(HeroPlayerState)) == false) { return; }
 	UE_LOG(LogTemp, Warning, TEXT("TeamChange!"))
 	RemovePlayer(HeroPlayerState);
 	AddPlayer(HeroPlayerState);

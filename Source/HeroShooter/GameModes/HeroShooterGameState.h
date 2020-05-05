@@ -38,6 +38,8 @@ public:
 
 	TSubclassOf<UGameModeInfoWidget> GetInfoWidgetTemplate();
 
+	AHeroSpawner* GetTeamSpawner(int TeamIndex);
+
 	int GetTeamCount();
 
 	int GetMaxPlayersInTeam();

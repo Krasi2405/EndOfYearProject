@@ -228,34 +228,26 @@ void AHeroPlayerController::TeleportSpectatorToHeroPicker() {
 void AHeroPlayerController::TeamSetup() {
 	if (validate(TeamIndex != -1) == false) { return; }
 	
-	UWorld* World = GetWorld();
-	if (validate(IsValid(World)) == false) { return; }
-
-	TArray<AActor*> Spawners;
-	UGameplayStatics::GetAllActorsOfClass(World, AHeroSpawner::StaticClass(), Spawners);
-	if (validate(Spawners.Num() > 0) == false) { return; }
-
-	for (AActor* SpawnerActor : Spawners) {
-		AHeroSpawner* Spawner = Cast<AHeroSpawner>(SpawnerActor);
-		if (validate(IsValid(Spawner)) == false) { return; }
-		if (Spawner->GetTeamIndex() == TeamIndex) {
-			TeamSpawner = Spawner;
-			break;
-		}
-	}
-	
 	if (IsLocalController()) {
+		UWorld* World = GetWorld();
+		if (validate(IsValid(World)) == false) { return; }
+
+		AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
+		if (validate(IsValid(GameState)) == false) { return; }
+
+		TeamSpawner = GameState->GetTeamSpawner(TeamIndex);
+		if (validate(IsValid(TeamSpawner)) == false) { return; }
+		
+		TeamSpawner->Setup(this);
+		TeamSpawner->OnPlayerEnter.AddDynamic(this, &AHeroPlayerController::OnEnterSpawnArea);
+		TeamSpawner->OnPlayerExit.AddDynamic(this, &AHeroPlayerController::OnExitSpawnArea);
+
 		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
 		if (validate(IsValid(IngameHUD)) == false) { return; }
 
 		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
 		if (validate(IsValid(HeroPicker)) == false) { return; }
 
-		if (validate(IsValid(HeroPicker)) == false) { return; }
-		if (validate(IsValid(TeamSpawner)) == false) { return; }
-		TeamSpawner->Setup(this);
-		TeamSpawner->OnPlayerEnter.AddDynamic(this, &AHeroPlayerController::OnEnterSpawnArea);
-		TeamSpawner->OnPlayerExit.AddDynamic(this, &AHeroPlayerController::OnExitSpawnArea);
 		HeroPicker->Setup(TeamSpawner);
 		TeleportSpectatorToHeroPicker();
 	}

@@ -6,6 +6,10 @@
 #include "GameFramework/PlayerState.h"
 #include "HeroPlayerState.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnStatsChange, int, Kills, int, Deaths, int, Assists);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUsernameChange, FString, Username);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPortraitChange, UTexture2D*, PortraitTexture);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTeamChange, AHeroPlayerState*, HeroPlayerState);
 
 /**
@@ -29,6 +33,17 @@ public:
 	void SetTeamIndex(int NewTeamIndex);
 
 	int GetTeamIndex();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void SetPortrait(int TextureIndex);
+
+	void SetPortrait_Implementation(int TextureIndex);
+
+	FOnStatsChange OnStatsChange;
+
+	FOnUsernameChange OnUsernameChange;
+
+	FOnPortraitChange OnPortraitChange;
 
 	FOnTeamChange OnTeamChange;
 

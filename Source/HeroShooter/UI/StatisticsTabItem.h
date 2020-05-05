@@ -26,10 +26,13 @@ public:
 
 protected:
 
+	UFUNCTION()
 	void UpdateStats(int Kills, int Deaths, int Assists);
 
+	UFUNCTION()
 	void UpdateUsername(FString Username);
 
+	UFUNCTION()
 	void UpdatePlayerPortrait(UTexture2D* Portrait);
 
 	UPROPERTY()

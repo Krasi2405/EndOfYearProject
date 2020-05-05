@@ -49,3 +49,23 @@ void AHeroShooterGameState::RemovePlayerState(APlayerState* PlayerState) {
 	if (validate(IsValid(HeroPlayerState)) == false) { return; }
 	OnRemovePlayer.Broadcast(HeroPlayerState);
 }
+
+
+AHeroSpawner* AHeroShooterGameState::GetTeamSpawner(int TeamIndex) {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return nullptr; }
+
+	TArray<AActor*> Spawners;
+	UGameplayStatics::GetAllActorsOfClass(World, AHeroSpawner::StaticClass(), Spawners);
+	if (validate(Spawners.Num() > 0) == false) { return nullptr; }
+
+	for (AActor* SpawnerActor : Spawners) {
+		AHeroSpawner* Spawner = Cast<AHeroSpawner>(SpawnerActor);
+		if (validate(IsValid(Spawner)) == false) { return nullptr; }
+		if (Spawner->GetTeamIndex() == TeamIndex) {
+			return Spawner;
+		}
+	}
+
+	return nullptr;
+}

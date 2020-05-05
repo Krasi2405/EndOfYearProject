@@ -64,8 +64,9 @@ void AHeroShooterGameMode::Logout(AController* Exiting) {
 
 	Team->Remove(Exiting);
 
-	UE_LOG(LogTemp, Warning, TEXT("Logout"))
-	AddBot(TeamIndex);
+	if (PlayerState->bIsABot == false) {
+		AddBot(TeamIndex);
+	}
 }
 
 
@@ -123,7 +124,7 @@ void AHeroShooterGameMode::InitGameState() {
 		TArray<AController*>* Team = new TArray<AController*>();
 		int MaxPlayers = GameState->GetMaxPlayersInTeam();
 		Teams.Add(Team);
-		for (int j = 0; j < MaxPlayers; j++) {
+		for (int j = GetPlayerCountInTeam(i); j < MaxPlayers; j++) {
 			AddBot(i);
 		}
 	}
@@ -217,7 +218,7 @@ void AHeroShooterGameMode::ChangePlayerTeam(int TeamIndex, int PlayerIndex, int 
 
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return; }
-	if (validate(NewTeam->Num() < GameState->GetTeamCount()) == false) { return; }
+	if (validate(NewTeam->Num() < GameState->GetMaxPlayersInTeam()) == false) { return; }
 
 	NewTeam->Add(PlayerController);
 	Team->RemoveAt(PlayerIndex);
@@ -226,7 +227,6 @@ void AHeroShooterGameMode::ChangePlayerTeam(int TeamIndex, int PlayerIndex, int 
 	if (validate(IsValid(PlayerState)) == false) { return; }
 	PlayerState->SetTeamIndex(NewTeamIndex);
 }
-
 
 
 void AHeroShooterGameMode::TravelToMapInMapPool() {
