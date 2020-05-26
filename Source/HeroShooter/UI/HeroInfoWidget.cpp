@@ -4,27 +4,38 @@
 #include "HeroInfoWidget.h"
 #include "Components/TextBlock.h"
 #include "Healthbar.h"
+#include "Weapon.h"
+#include "HealthComponent.h"
 
 #include "CustomMacros.h"
 
 
-void UHeroInfoWidget::Setup(int MaxAmmo, int MaxHealth) {
-	if (validate(IsValid(Healthbar)) == false) { return; }
-	Healthbar->Setup(MaxHealth);
+void UHeroInfoWidget::SetupAmmoBar(AWeapon* Weapon) {
+	if (validate(IsValid(Weapon)) == false) { return; }
 
-	this->MaxAmmo = MaxAmmo;
-	if (validate(IsValid(MaxAmmoText)) == false) { return; }
+	int MaxAmmo = Weapon->GetMaxAmmo();
 	MaxAmmoText->SetText(FText::FromString(FString::FromInt(MaxAmmo)));
 	UpdateAmmoBar(MaxAmmo);
+
+	Weapon->OnAmmoChanged.AddDynamic(this, &UHeroInfoWidget::UpdateAmmoBar);
+}
+
+
+void UHeroInfoWidget::SetupHealthBar(UHealthComponent* HealthComponent) {
+	if (validate(IsValid(HealthComponent)) == false) { return; }
+
+	int MaxHealth = HealthComponent->GetMaxHealth();
+	Healthbar->Setup(MaxHealth);
+	UpdateHealthbar(MaxHealth);
+
+	HealthComponent->OnHealthChanged.AddDynamic(this, &UHeroInfoWidget::UpdateHealthbar);
 }
 
 
 void UHeroInfoWidget::UpdateHealthbar(int CurrentHealth) {
-	if (validate(IsValid(Healthbar)) == false) { return; }
 	Healthbar->Update(CurrentHealth);
 }
 
 void UHeroInfoWidget::UpdateAmmoBar(int CurrentAmmo) {
-	if (validate(IsValid(CurrentAmmoText)) == false) { return; }
 	CurrentAmmoText->SetText(FText::FromString(FString::FromInt(CurrentAmmo)));
 }

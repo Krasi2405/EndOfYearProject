@@ -90,7 +90,8 @@ void AWeapon::LocalFire() {
 	FTransform FiringPointTransform = GetFiringPointGlobalTransform();
 	UParticleSystemComponent* ParticleComponent = UGameplayStatics::SpawnEmitterAtLocation(World, FireParticleSystemTemplate, FiringPointTransform);
 	if (validate(IsValid(ParticleComponent)) == false) { return; }
-	ParticleComponent->SetWorldRotation(FiringPointTransform.GetRotation());
+	ParticleComponent->SetWorldRotation(GetActorForwardVector().Rotation());
+	ParticleComponent->AttachTo(FiringPoint);
 
 	if (validate(IsValid(FireAudioComponent)) == false) { return; }
 	FireAudioComponent->Play();

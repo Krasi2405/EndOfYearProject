@@ -29,8 +29,6 @@ public:
 
 	void SetSelectedHero(TSubclassOf<ABaseCharacter> HeroTemplate);
 
-	void Setup(AHeroSpawner* ConnectedSpawner);
-
 	FOnHeroSelected OnHeroSelected;
 
 protected:
@@ -38,6 +36,7 @@ protected:
 	bool Initialize() override;
 
 	bool InitializeHeroList();
+
 
 	UFUNCTION()
 	void SpawnSelected();

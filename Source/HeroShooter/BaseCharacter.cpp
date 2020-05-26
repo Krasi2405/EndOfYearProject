@@ -23,6 +23,7 @@
 #include "ActiveGameplayAbility.h"
 #include "AttributeSetBase.h"
 #include "CustomMacros.h"
+#include "HeroPlayerState.h"
 
 // Sets default values
 ABaseCharacter::ABaseCharacter()
@@ -36,6 +37,8 @@ ABaseCharacter::ABaseCharacter()
 	validate(IsValid(HealthComponent));
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(FName("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+
 
 	AttributeSet = CreateDefaultSubobject<UAttributeSetBase>(FName("Attribute Set"));
 }
@@ -75,7 +78,8 @@ void ABaseCharacter::BeginPlay()
 		Weapon = World->SpawnActor<AWeapon>(StartingWeaponTemplate, SpawnInfo);
 		if (validate(IsValid(Weapon)) == false) { return; }
 		Weapon->AttachToComponent(SkeletalMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, "GunSocket");
-		Weapon->OnOutOfAmmo.AddDynamic(this, &ABaseCharacter::AttemptReload);
+		SetupEquippedWeapon();
+
 		HeroAnimInstance->OnReloadFinished.AddDynamic(this, &ABaseCharacter::Reload);
 	}
 	else
@@ -137,9 +141,7 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 
 void ABaseCharacter::OnRep_WeaponSpawn() {
-	if (IsValid(Weapon) == false) { return; }
-	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
-	HeroAnimInstance->OnReloadFinished.AddDynamic(Weapon, &AWeapon::Reload);
+	SetupEquippedWeapon();
 }
 
 void ABaseCharacter::CancelReload() {
@@ -302,8 +304,11 @@ void ABaseCharacter::AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityT
 	if (validate(IsValid(AbilitySystemComponent)) == false) { return; }
 	if (validate(AbilityToAcquire != nullptr) == false) { return; }
 
+	if (HasAuthority() == false) { return; }
+
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityToAcquire));
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	AbilitySystemComponent->ReplicationMode = EGameplayEffectReplicationMode::Mixed;
 
 	TSubclassOf<UActiveGameplayAbility> ActiveAbilityToAcquire(AbilityToAcquire);
 	if (IsValid(ActiveAbilityToAcquire)) {
@@ -363,6 +368,8 @@ void ABaseCharacter::AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityT
 
 
 void ABaseCharacter::ActivateAbility(int AbilityIndex) {
+	if (HasAuthority() == false) { return; }
+
 	if (validate(ActiveAbilities.Num() >= AbilityIndex) == false) { return; }
 	TSubclassOf<UGameplayAbility> Ability = ActiveAbilities[AbilityIndex];
 	if (validate(Ability != nullptr) == false) { return; }
@@ -371,4 +378,38 @@ void ABaseCharacter::ActivateAbility(int AbilityIndex) {
 
 UBehaviorTree* ABaseCharacter::GetAIBehaviorTreeForCurrentGamemode() {
 	return BehaviourTree;
+}
+
+
+void ABaseCharacter::PossessedBy(AController* NewController) {
+	Super::PossessedBy(NewController);
+
+	if (IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+
+	// ASC MixedMode replication requires that the ASC Owner's Owner be the Controller.
+	SetOwner(NewController);
+}
+
+
+void ABaseCharacter::SetupEquippedWeapon() {
+	AWeapon* NewWeapon = GetEquippedWeapon();
+	if (IsValid(NewWeapon) == false) { return; }
+	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	OnWeaponChange.Broadcast(NewWeapon);
+	HeroAnimInstance->OnReloadFinished.AddDynamic(NewWeapon, &AWeapon::Reload);
+}
+
+
+
+int ABaseCharacter::GetTeamIndex() {
+	AController* OwnerController = GetController();
+	if (validate(IsValid(OwnerController)) == false) { return -1; }
+
+	AHeroPlayerState* HeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(HeroPlayerState)) == false) { return -1; }
+
+	return HeroPlayerState->GetTeamIndex();
 }

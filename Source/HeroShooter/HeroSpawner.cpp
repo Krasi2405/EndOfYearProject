@@ -105,7 +105,7 @@ void AHeroSpawner::SpawnHero(AController* Controller, TSubclassOf<ABaseCharacter
 
 	Controller->Possess(Hero);
 	
-	AHeroPlayerState* PlayerState = Cast<AHeroPlayerState>(Controller->PlayerState);
+	AHeroPlayerState* PlayerState = Controller->GetPlayerState<AHeroPlayerState>();
 	if (validate(IsValid(PlayerState)) == false) { return; }
 
 	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
@@ -144,9 +144,6 @@ int AHeroSpawner::GetTeamIndex() {
 
 
 void AHeroSpawner::OnEnterSpawnArea(AActor* OverlappedActor, AActor* OtherActor) {
-	UE_LOG(LogTemp, Warning, TEXT("Enter Spawn Area. Overlapped Actor: %s, Other Actor: %s"), 
-		*OverlappedActor->GetName(), *OtherActor->GetName());
-	
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(OtherActor);
 	if (IsValid(BaseCharacter) == false) { return; }
 	

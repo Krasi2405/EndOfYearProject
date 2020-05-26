@@ -20,6 +20,9 @@ class UPassiveGameplayAbility;
 class UAttributeSetBase;
 class UBehaviorTree;
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponChange, AWeapon*, Weapon);
+
 UCLASS()
 class HEROSHOOTER_API ABaseCharacter : public ACharacter, public IAbilitySystemInterface
 {
@@ -30,6 +33,8 @@ public:
 	ABaseCharacter();
 
 	AWeapon* GetEquippedWeapon();
+
+	int GetTeamIndex();
 
 	void HideHead();
 
@@ -56,6 +61,9 @@ public:
 	UFUNCTION()
 	void CancelReload();
 
+	FOnWeaponChange OnWeaponChange;
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -68,6 +76,8 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void Destroyed() override;
+
+	virtual void PossessedBy(AController* Controller) override;
 
 	// Send reload command to server 
 	UFUNCTION(Server, Reliable)
@@ -167,4 +177,5 @@ protected:
 	UFUNCTION()
 	void Reload();
 
+	void SetupEquippedWeapon();
 };

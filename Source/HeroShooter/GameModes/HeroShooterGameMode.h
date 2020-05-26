@@ -44,6 +44,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AEnemyAIController> EnemyAIControllerTemplate;
 
+	UPROPERTY(EditDefaultsOnly)
+	bool bSpawnBots = false;
+
 	virtual void BeginPlay() override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;

@@ -17,6 +17,7 @@
 
 
 void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
+	UE_LOG(LogTemp, Warning, TEXT("Setup widgets for %s"), *GetOwningPlayerController()->GetName());
 	TSubclassOf<UGameModeInfoWidget> InfoWidgetTemplate = HeroShooterGameState->GetInfoWidgetTemplate();
 	GameModeInfoWidget = SpawnWidget<UGameModeInfoWidget>(InfoWidgetTemplate);
 

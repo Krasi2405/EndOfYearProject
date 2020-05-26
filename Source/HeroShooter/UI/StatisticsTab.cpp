@@ -15,6 +15,8 @@ bool UStatisticsTab::Initialize() {
 		return false;
 	}
 
+	return true;
+
 	AHeroPlayerController* HeroPlayerController = Cast<AHeroPlayerController>(GetOwningPlayer());
 	if (validate(IsValid(HeroPlayerController)) == false) { return false; }
 

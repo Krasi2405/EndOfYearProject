@@ -21,13 +21,9 @@ class HEROSHOOTER_API UHeroInfoWidget : public UUserWidget
 
 public:
 
-	void Setup(int MaxAmmo, int MaxHealth);
+	void SetupAmmoBar(class AWeapon* Weapon);
 
-	UFUNCTION()
-	void UpdateHealthbar(int CurrentHealth);
-
-	UFUNCTION()
-	void UpdateAmmoBar(int CurrentAmmo);
+	void SetupHealthBar(class UHealthComponent* Healthbar);
 
 protected:
 	
@@ -40,6 +36,11 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* CurrentAmmoText;
 
-	int MaxAmmo = 0;
+
+	UFUNCTION()
+	void UpdateHealthbar(int CurrentHealth);
+
+	UFUNCTION()
+	void UpdateAmmoBar(int CurrentAmmo);
 
 };

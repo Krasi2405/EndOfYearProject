@@ -262,6 +262,8 @@ void AHeroShooterGameMode::HandleDeath(AController* PlayerController, AControlle
 
 
 void AHeroShooterGameMode::AddBot(int TeamIndex) {
+	if (bSpawnBots == false) { return; }
+
 	if (validate(Teams.IsValidIndex(TeamIndex)) == false) { return; }
 	TArray<AController*>* Team = Teams[TeamIndex];
 	if (validate(Team != nullptr) == false) { return; }
@@ -283,6 +285,8 @@ void AHeroShooterGameMode::AddBot(int TeamIndex) {
 }
 
 void AHeroShooterGameMode::RemoveBot(int TeamIndex) {
+	if (bSpawnBots == false) { return; }
+
 	if (validate(Teams.IsValidIndex(TeamIndex)) == false) { return; }
 
 	TArray<AController*>* Team = Teams[TeamIndex];

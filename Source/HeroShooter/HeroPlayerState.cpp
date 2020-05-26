@@ -38,19 +38,6 @@ void AHeroPlayerState::SetTeamIndex(int NewTeamIndex) {
 
 	TeamIndex = NewTeamIndex;
 	OnTeamChange.Broadcast(this);
-
-	if (bIsABot == false) {
-		UWorld* World = GetWorld();
-		if (validate(IsValid(World)) == false) { return; }
-
-		AHeroPlayerController* HeroPlayerController = Cast<AHeroPlayerController>(
-			GetPlayerControllerFromNetId(World, UniqueId.GetUniqueNetId().ToSharedRef().Get())
-		);
-
-		if (IsValid(HeroPlayerController) && HeroPlayerController->IsLocalController()) {
-			HeroPlayerController->SetTeamIndex(NewTeamIndex);
-		}
-	}
 }
 
 

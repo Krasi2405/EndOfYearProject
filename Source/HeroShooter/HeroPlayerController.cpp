@@ -26,6 +26,7 @@
 #include "GameModes/HeroShooterGameMode.h"
 #include "GameModes/HeroShooterGameState.h"
 #include "GameModes/GameModeInfoWidget.h"
+#include "HeroPlayerState.h"
 #include "MultiplayerGameInstance.h"
 
 
@@ -51,17 +52,14 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 	UHeroInfoWidget* HeroInfo = IngameHUD->GetHeroInfoWidget();
 	if (validate(IsValid(HeroInfo)) == false) { return; }
-
-	AWeapon* Weapon = PossessedCharacter->GetEquippedWeapon();
-	if (validate(IsValid(Weapon)) == false) { return; }
-
 	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
+	HeroInfo->SetupHealthBar(HealthComponent);
 
-	HeroInfo->Setup(Weapon->GetMaxAmmo(), HealthComponent->GetMaxHealth());
-
-	HealthComponent->OnHealthChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateHealthbar);
-	Weapon->OnAmmoChanged.AddDynamic(HeroInfo, &UHeroInfoWidget::UpdateAmmoBar);
+	PossessedCharacter->OnWeaponChange.AddDynamic(this, &AHeroPlayerController::ChangeWeapon);
+	if (IsValid(PossessedCharacter->GetEquippedWeapon())) {
+		ChangeWeapon(PossessedCharacter->GetEquippedWeapon());
+	}
 
 	DeactivateHeroPicker();
 }
@@ -83,6 +81,14 @@ void AHeroPlayerController::OnPossess(APawn* Pawn) {
 
 void AHeroPlayerController::OnUnPossess() {
 	Super::OnUnPossess();
+
+	UE_LOG(LogTemp, Warning, TEXT("%s Unpossess"), *GetName())
+
+	if (HasAuthority()) {
+		ABaseCharacter* Character = Cast<ABaseCharacter>(GetCharacter());
+		if (validate(IsValid(Character)) == false) { return; }
+		Character->Destroy();
+	}
 }
 
 
@@ -109,19 +115,24 @@ void AHeroPlayerController::ServerHandleDeath() {
 
 
 void AHeroPlayerController::BeginPlay() {
-	if (IsLocalController()) {
-		UWorld* World = GetWorld();
-		if (validate(IsValid(World)) == false) { return; }
+	Super::BeginPlay();
 
-		AHeroShooterGameState* GameState = World->GetGameState<AHeroShooterGameState>();
-		if (validate(IsValid(GameState)) == false) { return; }
-		GameState->OnWinConditionSent.AddDynamic(this, &AHeroPlayerController::HandleWinCondition);
+	AHeroPlayerState* PlayerState = GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+	SetTeamIndex(PlayerState->GetTeamIndex());
+	PlayerState->OnTeamChange.AddUniqueDynamic(this, &AHeroPlayerController::OnTeamChange);
 
-		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
-		if (validate(IsValid(IngameHUD)) == false) { return; }
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	AHeroShooterGameState* GameState = World->GetGameState<AHeroShooterGameState>();
+	if (validate(IsValid(GameState)) == false) { return; }
+	GameState->OnWinConditionSent.AddDynamic(this, &AHeroPlayerController::HandleWinCondition);
+
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (IsValid(IngameHUD)) {
 		IngameHUD->SetupWidgets(GameState);
-
-
 
 		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
 		if (validate(IsValid(HeroPicker)) == false) { return; }
@@ -133,6 +144,8 @@ void AHeroPlayerController::BeginPlay() {
 	if (LastTeamSetupIndex != TeamIndex) {
 		TeamSetup();
 	}
+
+
 
 	bBeginPlayExecuted = true;
 }
@@ -205,6 +218,7 @@ void AHeroPlayerController::ToggleChat() {
 
 
 void AHeroPlayerController::SetTeamIndex(int NewTeamIndex) {
+	UE_LOG(LogTemp, Warning, TEXT("Change team on %s to %d"), *GetName(), NewTeamIndex);
 	TeamIndex = NewTeamIndex;
 
 	if (LastTeamSetupIndex != TeamIndex && bBeginPlayExecuted) {
@@ -229,26 +243,18 @@ void AHeroPlayerController::TeamSetup() {
 	if (validate(TeamIndex != -1) == false) { return; }
 	
 	if (IsLocalController()) {
-		UWorld* World = GetWorld();
-		if (validate(IsValid(World)) == false) { return; }
+		if (IsValid(TeamSpawner)) {
+			TeamSpawner->OnPlayerEnter.RemoveAll(this);
+			TeamSpawner->OnPlayerExit.RemoveAll(this);
+		}
 
-		AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
-		if (validate(IsValid(GameState)) == false) { return; }
-
-		TeamSpawner = GameState->GetTeamSpawner(TeamIndex);
+		TeamSpawner = GetAssociatedHeroSpawner();
 		if (validate(IsValid(TeamSpawner)) == false) { return; }
 		
 		TeamSpawner->Setup(this);
 		TeamSpawner->OnPlayerEnter.AddDynamic(this, &AHeroPlayerController::OnEnterSpawnArea);
 		TeamSpawner->OnPlayerExit.AddDynamic(this, &AHeroPlayerController::OnExitSpawnArea);
 
-		AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
-		if (validate(IsValid(IngameHUD)) == false) { return; }
-
-		UHeroPickerMenu* HeroPicker = IngameHUD->GetHeroPicker();
-		if (validate(IsValid(HeroPicker)) == false) { return; }
-
-		HeroPicker->Setup(TeamSpawner);
 		TeleportSpectatorToHeroPicker();
 	}
 	LastTeamSetupIndex = TeamIndex;
@@ -261,8 +267,10 @@ void AHeroPlayerController::ChooseHero(TSubclassOf<ABaseCharacter> Hero) {
 
 
 void AHeroPlayerController::ServerSpawnHero_Implementation(TSubclassOf<ABaseCharacter> Hero) {
-	if (validate(IsValid(TeamSpawner)) == false) { return; }
 	if (validate(IsValid(Hero)) == false) { return; }
+
+	AHeroSpawner* TeamSpawner = GetAssociatedHeroSpawner();
+	if (validate(IsValid(TeamSpawner)) == false) { return; }
 	TeamSpawner->SpawnHero(this, Hero);
 }
 
@@ -315,12 +323,6 @@ void AHeroPlayerController::SwitchHero() {
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
 	IngameHUD->HideHint();
-
-	ABaseCharacter* Character = Cast<ABaseCharacter>(GetCharacter());
-	if (validate(IsValid(Character)) == false) { return; }
-
-	Character->Destroy();
-
 	UnPossess();
 	ActivateHeroPicker();
 }
@@ -337,4 +339,38 @@ void AHeroPlayerController::HideStats() {
 	AIngameHUD* HUD = GetHUD<AIngameHUD>();
 	if (validate(IsValid(HUD)) == false) { return; }
 	HUD->HideStatisticsTab();
+}
+
+AHeroSpawner* AHeroPlayerController::GetAssociatedHeroSpawner() {
+	if (TeamIndex == -1) {
+		UE_LOG(LogTemp, Warning, TEXT("No spawner for team -1"));
+		return nullptr; 
+	}
+
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return nullptr; }
+	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState<AHeroShooterGameState>());
+	if (validate(IsValid(GameState)) == false) { return nullptr; }
+
+	AHeroSpawner* Spawner = GameState->GetTeamSpawner(TeamIndex);
+	if (validate(IsValid(Spawner)) == false) { return nullptr; }
+
+	return Spawner;
+}
+
+
+
+void AHeroPlayerController::OnTeamChange(AHeroPlayerState* HeroPlayerState) {
+	SetTeamIndex(HeroPlayerState->GetTeamIndex());
+}
+
+
+
+void AHeroPlayerController::ChangeWeapon(AWeapon* Weapon) {
+	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(IngameHUD)) == false) { return; }
+	UHeroInfoWidget* HeroInfo = IngameHUD->GetHeroInfoWidget();
+	if (validate(IsValid(HeroInfo)) == false) { return; }
+
+	HeroInfo->SetupAmmoBar(Weapon);
 }

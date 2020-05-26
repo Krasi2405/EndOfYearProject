@@ -48,13 +48,8 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		QueryParams
 	);
 
-	AController* OwnerController = Owner->GetController();
-	if (validate(IsValid(OwnerController)) == false) { return; }
+	
 
-	AHeroPlayerState* HeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
-	if (validate(IsValid(HeroPlayerState)) == false) { return; }
-
-	int TeamIndex = HeroPlayerState->GetTeamIndex();
 	for (FHitResult HitResult : OutHits) {
 		AActor* HitActor = HitResult.Actor.Get();
 		if (validate(IsValid(HitActor)) == false) { return; }
@@ -62,16 +57,13 @@ void AHitscanWeapon::ServerFire_Implementation(FVector Direction) {
 		UHealthComponent* HealthComponent = HitActor->FindComponentByClass<UHealthComponent>();
 		if (IsValid(HealthComponent) == false) { continue; }
 
-		ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
-		if (IsValid(Character)) {
-			AController* OtherController = Character->GetController();
-			if (IsValid(OtherController) == false) { continue; }
-
-			AHeroPlayerState* OtherHeroPlayerState = OwnerController->GetPlayerState<AHeroPlayerState>();
-			if (validate(IsValid(OtherHeroPlayerState)) == false) { return; }
-
-			if (OtherHeroPlayerState->GetTeamIndex() == TeamIndex) { continue; }
+		ABaseCharacter* HitCharacter = Cast<ABaseCharacter>(HitActor);
+		if (IsValid(HitCharacter) && HitCharacter->GetTeamIndex() == Owner->GetTeamIndex()) {
+			continue;
 		}
+
+		AController* OwnerController = Owner->GetController();
+		if (validate(IsValid(OwnerController)) == false) { return; }
 
 		HealthComponent->TakeDamage((float) Damage, OwnerController);
 		return;

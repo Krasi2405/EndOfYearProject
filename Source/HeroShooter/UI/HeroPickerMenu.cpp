@@ -13,31 +13,27 @@
 #include "BaseCharacter.h"
 #include "HeroPlayerController.h"
 #include "HeroSpawner.h"
+#include "HeroPlayerState.h"
 #include "GameModes/HeroShooterGameState.h"
 
 
 bool UHeroPickerMenu::Initialize() {
-	bool bSuccess = Super::Initialize();
-	if (validate(bSuccess) == false) { return false; }
+	if (Super::Initialize() == false) { return false; }
 
 	if (validate(IsValid(SelectButton)) == false) { return false; }
 	SelectButton->OnClicked.AddDynamic(this, &UHeroPickerMenu::SpawnSelected);
+	
+	if (validate(InitializeHeroList()) == false) { return false; }
 
 	return true;
 }
 
 
 void UHeroPickerMenu::SpawnSelected() {
+	// Player controller spawns the hero on the server.
+
 	if (validate(IsValid(SelectedHero)) == false) { return; }
 	OnHeroSelected.Broadcast(SelectedHero);
-}
-
-
-void UHeroPickerMenu::Setup(AHeroSpawner* ConnectedSpawner) {
-	if (validate(IsValid(ConnectedSpawner)) == false) { return; }
-	TeamSpawner = ConnectedSpawner;
-
-	validate(InitializeHeroList());
 }
 
 
@@ -66,6 +62,11 @@ bool UHeroPickerMenu::InitializeHeroList() {
 
 void UHeroPickerMenu::SetSelectedHero(TSubclassOf<ABaseCharacter> HeroTemplate) {
 	SelectedHero = HeroTemplate;
+
+	AHeroPlayerController* HeroController = Cast<AHeroPlayerController>(GetOwningPlayer());
+	if (validate(IsValid(HeroController)) == false) { return; }
+
+	AHeroSpawner* TeamSpawner = HeroController->GetAssociatedHeroSpawner();
 	if (validate(IsValid(TeamSpawner)) == false) { return; }
 	TeamSpawner->SpawnHeroPreview(HeroTemplate);
 }

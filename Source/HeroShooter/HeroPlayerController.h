@@ -12,6 +12,7 @@ class UHeroPickerMenu;
 class UGameModeInfoWidget;
 class AHeroSpawner;
 class ABaseCharacter;
+class AHeroSpawner;
 
 /**
  * 
@@ -37,6 +38,8 @@ public:
 	void TeamSetup();
 
 	void SetTeamIndex(int NewTeamIndex);
+
+	AHeroSpawner* GetAssociatedHeroSpawner();
 
 protected:
 
@@ -119,4 +122,9 @@ protected:
 	UFUNCTION()
 	void HideStats();
 
+	UFUNCTION()
+	void OnTeamChange(class AHeroPlayerState* HeroPlayerState);
+
+	UFUNCTION()
+	void ChangeWeapon(class AWeapon* Weapon);
 };
