@@ -21,6 +21,7 @@ const static FName JOIN_SESSION_NAME = TEXT("JoinSessionGame");
 
 const static FName SERVER_SETTINGS_NAME_KEY = TEXT("ServerName");
 const static FName SERVER_SETTINGS_PASSWORD_KEY = TEXT("ServerPassword");
+const static FName SERVER_SETTINGS_SPAWN_BOTS_KEY = TEXT("SpawnBots");
 
 
 const static FString USER_STATS_FILENAME = "USERSTATS";
@@ -270,6 +271,7 @@ void UMultiplayerGameInstance::Host(FCustomServerSettings ServerSettings) {
 	SessionSettings.bUsesPresence = true; // Needed for Steam sessions.
 	SessionSettings.Set(SERVER_SETTINGS_NAME_KEY, ServerSettings.ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	SessionSettings.Set(SERVER_SETTINGS_PASSWORD_KEY, ServerSettings.Password, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	SessionSettings.Set(SERVER_SETTINGS_SPAWN_BOTS_KEY, ServerSettings.bSpawnBots, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	SessionInterface->CreateSession(0, HOST_SESSION_NAME, SessionSettings);
 }

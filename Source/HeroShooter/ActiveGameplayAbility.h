@@ -17,9 +17,15 @@ class HEROSHOOTER_API UActiveGameplayAbility : public UCustomGameplayAbility
 	
 public:
 
+	
+
 	FName GetInputActionName() { return InputActionName; }
 
 	EInputEvent GetActivationInputEvent() { return ActivationInputEvent; }
+
+	UTexture2D* GetAbilityImage() { return AbilityImage; }
+
+	float GetCooldownDuration() { return CooldownDuration; }
 
 protected:
 
@@ -28,5 +34,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TEnumAsByte<EInputEvent> ActivationInputEvent;
+		
+	UPROPERTY(EditDefaultsOnly)
+	UTexture2D* AbilityImage;
 
+	UPROPERTY(EditDefaultsOnly)
+	float CooldownDuration = 5;
 };

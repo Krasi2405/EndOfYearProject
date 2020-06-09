@@ -17,16 +17,24 @@ void UCountdownTimer::SetTimer(int Seconds) {
 	TimerManager.SetTimer(TimerHandle, this, &UCountdownTimer::CountDownByOne, 1.0f, true, 1.0f);
 
 	Timer = Seconds;
-	TimerText->Text = FText::FromString(FString::FromInt(Timer));
+	TimerText->SetText(FText::FromString(FString::FromInt(Timer)));
 }
 
 
 void UCountdownTimer::CountDownByOne() {
+	UE_LOG(LogTemp, Warning, TEXT("Countdown"));
+	Timer--;
+	TimerText->SetText(FText::FromString(FString::FromInt(Timer)));
+
 	if (Timer <= 0) {
 		OnCountdownOver.Broadcast();
-		TimerHandle.Invalidate();
+
+		UWorld* World = GetWorld();
+		if (validate(IsValid(World)) == false) { return; }
+
+		FTimerManager& TimerManager = World->GetTimerManager();
+		TimerManager.ClearTimer(TimerHandle);
+		RemoveFromViewport();
 	}
-	Timer--;
-	TimerText->Text = FText::FromString(FString::FromInt(Timer));
 }
 

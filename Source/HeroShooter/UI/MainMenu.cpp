@@ -7,6 +7,7 @@
 #include "Components/EditableTextBox.h"
 #include "Components/ScrollBox.h"
 #include "Components/SpinBox.h"
+#include "Components/CheckBox.h"
 #include "GameFramework/PlayerController.h"
 
 #include "MultiplayerGameInstance.h"
@@ -54,6 +55,7 @@ void UMainMenu::HostServer() {
 	ServerSettings.ServerName = ServerNameTextBox->GetText().ToString();
 	ServerSettings.Password = PasswordTextBox->GetText().ToString();
 	ServerSettings.MaxPlayerCount = (int) PlayerCountSpinBox->GetValue();
+	ServerSettings.bSpawnBots = SpawnBotsCheckBox->IsChecked();
 
 	MenuInterface->Host(ServerSettings);
 }

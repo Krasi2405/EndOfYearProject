@@ -43,6 +43,11 @@ public:
 	UFUNCTION()
 	void ActivateAbility(int AbilityIndex);
 
+	UFUNCTION(Server, Reliable)
+	void ServerActivateAbility(int AbilityIndex);
+
+	void ServerActivateAbility_Implementation(int AbilityIndex);
+
 	UFUNCTION(BlueprintCallable)
 	void AddGameplayTag(FGameplayTag Tag);
 
@@ -78,6 +83,8 @@ protected:
 	virtual void Destroyed() override;
 
 	virtual void PossessedBy(AController* Controller) override;
+
+	virtual void UnPossessed() override;
 
 	// Send reload command to server 
 	UFUNCTION(Server, Reliable)
@@ -159,11 +166,22 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire);
 
+	UFUNCTION(Client, Reliable)
+	void ClientBindAbility(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire, int AbilityIndex);
+
+	void ClientBindAbility_Implementation(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire, int AbilityIndex);
+
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TSubclassOf<UCustomGameplayAbility>> Abilities;
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<TSubclassOf<UActiveGameplayAbility>> ActiveAbilities;
+
+	UPROPERTY(VisibleAnywhere)
+	TMap<TSubclassOf<UGameplayAbility>, bool> ActiveAbilitiesCooldownMap;
+
+	UFUNCTION()
+	void ClearCooldown(TSubclassOf<UActiveGameplayAbility> Ability);
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<TSubclassOf<UPassiveGameplayAbility>> PassiveAbilities;

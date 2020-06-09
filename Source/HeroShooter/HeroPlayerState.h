@@ -32,6 +32,7 @@ public:
 
 	void SetTeamIndex(int NewTeamIndex);
 
+	UFUNCTION(BlueprintCallable)
 	int GetTeamIndex();
 
 	UFUNCTION(NetMulticast, Reliable)

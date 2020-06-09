@@ -11,7 +11,7 @@ EBTNodeResult::Type UBTTask_StartFiring::ExecuteTask(UBehaviorTreeComponent& Own
 	if (Super::ExecuteTask(OwnerComp, NodeMemory) != EBTNodeResult::Succeeded) {
 		return EBTNodeResult::Failed;
 	}
-	AICharacter->StopFiring();
+	AICharacter->StartFiring();
 
 	return EBTNodeResult::Succeeded;
 }

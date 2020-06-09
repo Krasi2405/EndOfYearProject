@@ -15,6 +15,7 @@ class UScrollBox;
 class UServerInfo;
 class UEditableTextBox;
 class USpinBox;
+class UCheckBox;
 
 /**
  * 
@@ -94,6 +95,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	USpinBox* PlayerCountSpinBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UCheckBox* SpawnBotsCheckBox;
 
 	UFUNCTION()
 	void HostServer();

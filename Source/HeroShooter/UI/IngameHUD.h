@@ -16,7 +16,9 @@ class UUserWidget;
 class UHeroInfoWidget;
 class UHintWidget;
 class UStatisticsTab;
+class UCountdownTimer;
 class AHeroShooterGameState;
+
 
 /**
  * 
@@ -69,10 +71,13 @@ public:
 
 	void HideHint();
 
+	void SetTimer(int Delay);
+
 	
 	void ShowStatisticsTab();
 
 	void HideStatisticsTab();
+
 
 protected:
 
@@ -127,6 +132,13 @@ protected:
 
 	UPROPERTY()
 	UStatisticsTab* StatisticsTab;
+
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCountdownTimer> CountdownTimerTemplate;
+
+	UPROPERTY()
+	UCountdownTimer* CountdownTimer;
 
 
 	void SetInputSettings(const FInputModeDataBase& InputModeSettings, bool bShowMouse);

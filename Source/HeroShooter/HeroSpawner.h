@@ -30,9 +30,14 @@ public:
 
 	void Setup(APlayerController* PlayerController);
 
+
 	void SpawnHeroPreview(TSubclassOf<ABaseCharacter> Hero);
 
+	void DestroyPreview();
+
 	void SpawnHero(AController* Player, TSubclassOf<ABaseCharacter> Hero);
+
+	void SpawnLastSelectedHero(AController* Player);
 
 	FVector GetCameraSpotLocation();
 
@@ -69,5 +74,6 @@ protected:
 
 	UPROPERTY()
 	ABaseCharacter* HeroPreview;
-		
+
+	TMap<AController*, TSubclassOf<ABaseCharacter>> SelectedHeroMap;
 };

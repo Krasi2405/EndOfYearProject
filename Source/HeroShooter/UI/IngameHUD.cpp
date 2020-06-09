@@ -13,6 +13,7 @@
 #include "GameModes/HeroShooterGameState.h"
 #include "HintWidget.h"
 #include "StatisticsTab.h"
+#include "CountdownTimer.h"
 #include "HeroInfoWidget.h"
 
 
@@ -20,6 +21,7 @@ void AIngameHUD::SetupWidgets(AHeroShooterGameState* HeroShooterGameState) {
 	UE_LOG(LogTemp, Warning, TEXT("Setup widgets for %s"), *GetOwningPlayerController()->GetName());
 	TSubclassOf<UGameModeInfoWidget> InfoWidgetTemplate = HeroShooterGameState->GetInfoWidgetTemplate();
 	GameModeInfoWidget = SpawnWidget<UGameModeInfoWidget>(InfoWidgetTemplate);
+	GameModeInfoWidget->Setup(HeroShooterGameState);
 
 	ChatBox = SpawnWidget<UChatBox>(ChatBoxTemplate);
 	if (validate(IsValid(ChatBox))) {
@@ -161,8 +163,20 @@ void AIngameHUD::ShowHint(FString Hint) {
 }
 
 
+
 void AIngameHUD::HideHint() {
 	HideWidget(HintWidget);
+}
+
+
+void AIngameHUD::SetTimer(int Delay) {
+	if (validate(IsValid(CountdownTimerTemplate)) == false) { return; }
+	if (IsValid(CountdownTimer)) {
+		CountdownTimer->RemoveFromViewport();
+	}
+	CountdownTimer = SpawnWidget<UCountdownTimer>(CountdownTimerTemplate);
+	if (validate(IsValid(CountdownTimer)) == false) { return; }
+	CountdownTimer->SetTimer(Delay);
 }
 
 

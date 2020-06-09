@@ -9,6 +9,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/Player.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "TimerManager.h"
 
 #include "UI/IngameHUD.h"
 #include "UI/IngameMenu.h"
@@ -27,6 +29,7 @@
 #include "GameModes/HeroShooterGameState.h"
 #include "GameModes/GameModeInfoWidget.h"
 #include "HeroPlayerState.h"
+
 #include "MultiplayerGameInstance.h"
 
 
@@ -50,10 +53,12 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 
 	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
 	if (validate(IsValid(IngameHUD)) == false) { return; }
+	IngameHUD->HideHint();
 	UHeroInfoWidget* HeroInfo = IngameHUD->GetHeroInfoWidget();
 	if (validate(IsValid(HeroInfo)) == false) { return; }
 	UHealthComponent* HealthComponent = PossessedCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
+	HealthComponent->OnDeath.AddDynamic(this, &AHeroPlayerController::ClientHandleDeath);
 	HeroInfo->SetupHealthBar(HealthComponent);
 
 	PossessedCharacter->OnWeaponChange.AddDynamic(this, &AHeroPlayerController::ChangeWeapon);
@@ -63,7 +68,6 @@ void AHeroPlayerController::AcknowledgePossession(APawn* Pawn) {
 
 	DeactivateHeroPicker();
 }
-
 
 
 void AHeroPlayerController::OnPossess(APawn* Pawn) {
@@ -79,19 +83,6 @@ void AHeroPlayerController::OnPossess(APawn* Pawn) {
 }
 
 
-void AHeroPlayerController::OnUnPossess() {
-	Super::OnUnPossess();
-
-	UE_LOG(LogTemp, Warning, TEXT("%s Unpossess"), *GetName())
-
-	if (HasAuthority()) {
-		ABaseCharacter* Character = Cast<ABaseCharacter>(GetCharacter());
-		if (validate(IsValid(Character)) == false) { return; }
-		Character->Destroy();
-	}
-}
-
-
 void AHeroPlayerController::ServerHandleDeath() {
 	if (validate(HasAuthority()) == false) { return; }
 	UE_LOG(LogTemp, Warning, TEXT("%s has died!"), *GetName());
@@ -103,14 +94,49 @@ void AHeroPlayerController::ServerHandleDeath() {
 	if (validate(IsValid(GameMode)) == false) { return; }
 
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
-	BaseCharacter->DisableInput(this);
 	if (validate(IsValid(BaseCharacter)) == false) { return; }
 	UHealthComponent* HealthComponent = BaseCharacter->FindComponentByClass<UHealthComponent>();
 	if (validate(IsValid(HealthComponent)) == false) { return; }
 
-	AHeroPlayerController* KillerHeroController = Cast<AHeroPlayerController>(HealthComponent->GetLastDamagedBy());
-	GameMode->HandleDeath(this, KillerHeroController);
-	// TODO: Wait a bit and respawn player
+	AController* KillerController = Cast<AController>(HealthComponent->GetLastDamagedBy());
+	if (IsValid(KillerController)) {
+		UE_LOG(LogTemp, Warning, TEXT("Last Damaged By In ServerHandleDeath %s"), *KillerController->GetName());
+	}
+	GameMode->HandleDeath(this, KillerController);
+	
+	FTimerManager& TimerManager = GetWorldTimerManager();
+	TimerManager.SetTimer(RespawnTimerHandle, this, &AHeroPlayerController::Respawn, RespawnDelay, false, RespawnDelay);
+
+	BaseCharacter->SetActorEnableCollision(false);
+	BaseCharacter->GetCharacterMovement()->GravityScale = 0;
+}
+
+
+void AHeroPlayerController::ClientHandleDeath() {
+	AIngameHUD* HUD = GetHUD<AIngameHUD>();
+	if (validate(IsValid(HUD)) == false) { return; }
+
+	HUD->SetTimer(RespawnDelay);
+	HUD->ShowHint("Respawning in");
+
+
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	BaseCharacter->DisableInput(this);
+}
+
+
+void AHeroPlayerController::Respawn() {
+	UWorld* World = GetWorld();
+	if (validate(IsValid(World)) == false) { return; }
+
+	AHeroShooterGameState* GameState = Cast<AHeroShooterGameState>(World->GetGameState());
+	if (validate(IsValid(GameState)) == false) { return; }
+
+	AHeroPlayerState* PlayerState = GetPlayerState<AHeroPlayerState>();
+	if (validate(IsValid(PlayerState)) == false) { return; }
+
+	AHeroSpawner* HeroSpawner = GameState->GetTeamSpawner(PlayerState->GetTeamIndex());
+	HeroSpawner->SpawnLastSelectedHero(this);
 }
 
 
@@ -233,35 +259,37 @@ void AHeroPlayerController::TeleportSpectatorToHeroPicker() {
 	FVector Location = TeamSpawner->GetCameraSpotLocation();
 	FRotator Rotation = TeamSpawner->GetCameraSpotLookAtRotation();
 
-	ASpectatorPawn* SpectatorPawn = GetSpectatorPawn();
-	if (validate(IsValid(SpectatorPawn)) == false) { return; }
-	SpectatorPawn->TeleportTo(Location, Rotation);
+	SetControlRotation(Rotation);
+	ClientSetLocation(Location, Rotation);
 }
 
 
 void AHeroPlayerController::TeamSetup() {
 	if (validate(TeamIndex != -1) == false) { return; }
-	
+
+	TeamSpawner = GetAssociatedHeroSpawner();
 	if (IsLocalController()) {
 		if (IsValid(TeamSpawner)) {
 			TeamSpawner->OnPlayerEnter.RemoveAll(this);
 			TeamSpawner->OnPlayerExit.RemoveAll(this);
 		}
 
-		TeamSpawner = GetAssociatedHeroSpawner();
 		if (validate(IsValid(TeamSpawner)) == false) { return; }
 		
 		TeamSpawner->Setup(this);
 		TeamSpawner->OnPlayerEnter.AddDynamic(this, &AHeroPlayerController::OnEnterSpawnArea);
 		TeamSpawner->OnPlayerExit.AddDynamic(this, &AHeroPlayerController::OnExitSpawnArea);
-
-		TeleportSpectatorToHeroPicker();
 	}
+	TeleportSpectatorToHeroPicker();
 	LastTeamSetupIndex = TeamIndex;
 }
 
 
 void AHeroPlayerController::ChooseHero(TSubclassOf<ABaseCharacter> Hero) {
+	APawn* Pawn = GetPawn();
+	if (IsValid(Pawn)) {
+		Pawn->Destroy();
+	}
 	ServerSpawnHero(Hero);
 }
 
@@ -322,6 +350,7 @@ void AHeroPlayerController::SwitchHero() {
 	AIngameHUD* IngameHUD = GetHUD<AIngameHUD>();
 	if (validate(IsValid(IngameHUD)) == false) { return; }
 
+	TeleportSpectatorToHeroPicker();
 	IngameHUD->HideHint();
 	UnPossess();
 	ActivateHeroPicker();

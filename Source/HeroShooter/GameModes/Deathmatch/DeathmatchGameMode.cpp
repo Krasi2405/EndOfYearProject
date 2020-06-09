@@ -29,7 +29,6 @@ void ADeathmatchGameMode::HandleDeath(AController* PlayerController, AController
 	else
 	{
 		if (validate(IsValid(PlayerController)) == false) { return; }
-
 		AHeroPlayerState* PlayerState = PlayerController->GetPlayerState<AHeroPlayerState>();
 		if (validate(IsValid(PlayerState)) == false) { return; }
 

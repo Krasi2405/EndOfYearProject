@@ -28,6 +28,7 @@ public:
 
 protected:
 
+	UFUNCTION()
 	void CountDownByOne();
 	
 	UPROPERTY(meta = (BindWidget))

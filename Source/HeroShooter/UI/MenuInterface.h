@@ -14,6 +14,7 @@ struct FCustomServerSettings {
 	FString ServerName = "Undefined";
 	int MaxPlayerCount = 6;
 	FString Password;
+	bool bSpawnBots = false;
 };
 
 

@@ -42,7 +42,6 @@ void AHeroShooterGameMode::PostLogin(APlayerController* NewPlayer) {
 	TArray<AController*>* Team = Teams[TeamIndex];
 	if (validate(Team != nullptr) == false) { return; }
 
-	UE_LOG(LogTemp, Warning, TEXT("Call Remove Bot With Team Index %d"), TeamIndex);
 	RemoveBot(TeamIndex);
 	Teams[TeamIndex]->Add(HeroController);
 	HeroPlayerState->SetTeamIndex(TeamIndex);
@@ -72,7 +71,6 @@ void AHeroShooterGameMode::Logout(AController* Exiting) {
 
 void AHeroShooterGameMode::BeginPlay() {
 	Super::BeginPlay();
-
 
 	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
 	if (validate(IsValid(GameInstance)) == false) { return; }
@@ -114,6 +112,13 @@ int AHeroShooterGameMode::GetDeltaRating(AHeroPlayerState* PlayerController) {
 void AHeroShooterGameMode::InitGameState() {
 	Super::InitGameState();
 
+	UMultiplayerGameInstance* GameInstance = GetGameInstance<UMultiplayerGameInstance>();
+	if (validate(IsValid(GameInstance)) == false) { return; }
+
+	FCustomServerSettings ServerSettings = GameInstance->GetCustomServerSettings();
+	bSpawnBots = ServerSettings.bSpawnBots;
+	UE_LOG(LogTemp, Warning, TEXT("bSpawnBots: %d"), bSpawnBots);
+
 	AHeroShooterGameState* GameState = GetGameState<AHeroShooterGameState>();
 	if (validate(IsValid(GameState)) == false) { return; }
 
@@ -137,7 +142,7 @@ int AHeroShooterGameMode::GetTeamIndexWithLeastPlayers() {
 	if (validate(IsValid(GameState)) == false) { return -1; }
 
 	if (validate(GameState->GetTeamCount() > 0) == false) { return -1; }
-	if (validate(Teams.Num() >= 0) == false) { return -1; }
+	if (validate(Teams.Num() > 0) == false) { return -1; }
 	if (validate(Teams[0] != nullptr) == false) { return -1; }
 
 	int LeastTeamIndex = 0;
@@ -235,7 +240,9 @@ void AHeroShooterGameMode::TravelToMapInMapPool() {
 	MapPoolDataTable->GetAllRows<FMapNameRow>(TEXT("GENERAL"), Maps);
 	int MapCount = Maps.Num();
 	if (validate(MapCount > 0) == false) { return; }
-	FMapNameRow* Map = Maps[FMath::RandRange(0, MapCount)];
+	int RandomMapIndex = FMath::RandRange(0, MapCount - 1);
+	if (validate(Maps.IsValidIndex(RandomMapIndex)) == false) { return; }
+	FMapNameRow* Map = Maps[RandomMapIndex];
 	if (validate(Map != nullptr) == false) { return; }
 	FString MapName = Map->MapName;
 

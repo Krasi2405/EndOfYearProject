@@ -45,12 +45,17 @@ void AHeroSpawner::Setup(APlayerController* PlayerController) {
 }
 
 
-void AHeroSpawner::SpawnHeroPreview(TSubclassOf<ABaseCharacter> HeroTemplate) {
-	if (validate(IsValid(HeroTemplate)) == false) { return; }
-
+void AHeroSpawner::DestroyPreview() {
 	if (IsValid(HeroPreview)) {
 		HeroPreview->Destroy();
 	}
+}
+
+
+void AHeroSpawner::SpawnHeroPreview(TSubclassOf<ABaseCharacter> HeroTemplate) {
+	if (validate(IsValid(HeroTemplate)) == false) { return; }
+
+	DestroyPreview();
 
 	if (validate(IsValid(LocalPlayerController)) == false) { return; }
 	FActorSpawnParameters SpawnParameters = FActorSpawnParameters();
@@ -70,6 +75,7 @@ void AHeroSpawner::SpawnHeroPreview(TSubclassOf<ABaseCharacter> HeroTemplate) {
 		HeroSpawnRotation,
 		SpawnParameters
 	);
+
 	if (validate(IsValid(Hero)) == false) { return; };
 	HeroPreview = Hero;
 }
@@ -101,10 +107,15 @@ void AHeroSpawner::SpawnHero(AController* Controller, TSubclassOf<ABaseCharacter
 	);
 
 	if (validate(IsValid(Hero)) == false) { return; }
+	Hero->SetReplicates(false);
 	if (validate(IsValid(Controller)) == false) { return; }
 
+	SelectedHeroMap.Add(Controller, HeroTemplate);
 	Controller->Possess(Hero);
 	
+
+
+	//
 	AHeroPlayerState* PlayerState = Controller->GetPlayerState<AHeroPlayerState>();
 	if (validate(IsValid(PlayerState)) == false) { return; }
 
@@ -127,6 +138,10 @@ void AHeroSpawner::SpawnHero(AController* Controller, TSubclassOf<ABaseCharacter
 	// TODO: FIx with actual architecture of getting heroes.
 }
 
+void AHeroSpawner::SpawnLastSelectedHero(AController* Controller) {
+	if (validate(SelectedHeroMap.Contains(Controller)) == false) { return; }
+	SpawnHero(Controller, SelectedHeroMap[Controller]);
+}
 
 FVector AHeroSpawner::GetCameraSpotLocation() {
 	return CameraSpot + GetActorLocation();

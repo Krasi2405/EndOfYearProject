@@ -29,16 +29,14 @@ void UHealthComponent::BeginPlay() {
 
 void UHealthComponent::TakeDamage(float Damage, AController* LastDamagedByPlayer) {
 	if (bDead) { return; }
+	SetDamager(LastDamagedByPlayer);
 
 	Health -= Damage;
-
 	if (Health <= 0) {
 		bDead = true;
 		OnDeath.Broadcast();
 	}
 	OnHealthChanged.Broadcast(Health);
-
-	SetDamager(LastDamagedByPlayer);
 }
 
 
@@ -53,12 +51,14 @@ void UHealthComponent::SetHealth(float NewHealth) {
 
 
 void UHealthComponent::SetDamager(AController* Damager) {
-	this->LastDamagedByPlayer = LastDamagedByPlayer;
+	this->LastDamagedByPlayer = Damager;
 
 	UWorld* World = GetWorld();
 	if (validate(IsValid(World)) == false) { return; }
 
+
 	FTimerManager& TimerManager = World->GetTimerManager();
+	TimerManager.ClearTimer(LastDamagedByTimerHandle);
 	TimerManager.SetTimer(
 		LastDamagedByTimerHandle,					// Handle associated with timer
 		this,										// Object to call the method on
@@ -66,9 +66,12 @@ void UHealthComponent::SetDamager(AController* Damager) {
 		LastDamagedByExpireTime,					// Time to wait before calling the method.
 		false										// don't loop
 	);
+
+	UE_LOG(LogTemp, Warning, TEXT("Set Damager"));
 }
 
 void UHealthComponent::ClearLastDamagedBy() {
+	UE_LOG(LogTemp, Warning, TEXT("Clear Damager"))
 	LastDamagedByPlayer = nullptr;
 }
 

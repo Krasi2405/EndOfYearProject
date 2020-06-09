@@ -12,6 +12,9 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 
 #include "UI/Healthbar.h"
 #include "HeroAnimInstance.h"
@@ -133,10 +136,6 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ABaseCharacter::AttemptReload);
 	PlayerInputComponent->BindAction("CancelReload", IE_Pressed, this, &ABaseCharacter::CancelReload);
-
-	for (TSubclassOf<UCustomGameplayAbility> Ability : Abilities) {
-		AcquireAbility(Ability);
-	}
 }
 
 
@@ -154,7 +153,8 @@ void ABaseCharacter::CancelReload() {
 }
 
 void ABaseCharacter::AttemptReload() {
-	if (bReloading) { return; }
+	if (validate(IsValid(Weapon)) == false) { return; }
+	if (Weapon->IsFiring()) { return; }
 
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
 	HeroAnimInstance->StartReload();
@@ -279,8 +279,9 @@ void ABaseCharacter::SetHealthWidgetComponent(UWidgetComponent* HealthbarWidgetC
 
 
 void ABaseCharacter::Die() {
-	UE_LOG(LogTemp, Warning, TEXT("Die"))
 	if (validate(IsValid(HeroAnimInstance)) == false) { return; }
+	GetCapsuleComponent()->Deactivate();
+	SetActorEnableCollision(false);
 	HeroAnimInstance->OnDeath();
 }
 
@@ -315,31 +316,10 @@ void ABaseCharacter::AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityT
 
 		if (ActiveAbilities.Contains(ActiveAbilityToAcquire) == false) {
 			ActiveAbilities.Add(ActiveAbilityToAcquire);
+			ActiveAbilitiesCooldownMap.Add(ActiveAbilityToAcquire, false);
 		}
 		int AbilityIndex = ActiveAbilities.Find(ActiveAbilityToAcquire);
-
-		AController* Controller = GetController();
-		if (validate(IsValid(Controller)) == false) { return; }
-
-		UInputComponent* InputComponent = Controller->InputComponent;
-		if (IsValid(InputComponent)) {
-			UActiveGameplayAbility* ActiveGameplayAbility = Cast<UActiveGameplayAbility>(ActiveAbilityToAcquire.GetDefaultObject());
-			if (validate(IsValid(ActiveGameplayAbility)) == false) { return; }
-
-			FInputActionBinding ActionBinding(
-				ActiveGameplayAbility->GetInputActionName(), ActiveGameplayAbility->GetActivationInputEvent()
-			);
-
-			FInputActionHandlerSignature Delegate;
-			Delegate.BindUFunction(this, FName("ActivateAbility"), AbilityIndex);
-			ActionBinding.ActionDelegate = Delegate;
-
-			InputComponent->AddActionBinding(ActionBinding);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Active ability not bound to input!"))
-		}
+		ClientBindAbility(AbilityToAcquire, AbilityIndex);
 	}
 	else
 	{
@@ -367,14 +347,73 @@ void ABaseCharacter::AcquireAbility(TSubclassOf<UCustomGameplayAbility> AbilityT
 }
 
 
-void ABaseCharacter::ActivateAbility(int AbilityIndex) {
-	if (HasAuthority() == false) { return; }
+void ABaseCharacter::ClientBindAbility_Implementation(TSubclassOf<UCustomGameplayAbility> AbilityToAcquire, int AbilityIndex) {
+	AController* Controller = GetController();
+	if (validate(IsValid(Controller)) == false) { return; }
 
+	UInputComponent* InputComponent = Controller->InputComponent;
+	if (IsValid(InputComponent)) {
+		TSubclassOf<UActiveGameplayAbility> ActiveAbilityToAcquire(AbilityToAcquire);
+		UActiveGameplayAbility* ActiveGameplayAbility = Cast<UActiveGameplayAbility>(ActiveAbilityToAcquire.GetDefaultObject());
+		if (validate(IsValid(ActiveGameplayAbility)) == false) { return; }
+
+		FInputActionBinding ActionBinding(
+			ActiveGameplayAbility->GetInputActionName(), ActiveGameplayAbility->GetActivationInputEvent()
+		);
+
+		FInputActionHandlerSignature Delegate;
+		Delegate.BindUFunction(this, FName("ActivateAbility"), AbilityIndex);
+		ActionBinding.ActionDelegate = Delegate;
+
+		InputComponent->AddActionBinding(ActionBinding);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Active ability not bound to input!"))
+	}
+}
+
+
+void ABaseCharacter::ActivateAbility(int AbilityIndex) {
+	UE_LOG(LogTemp, Warning, TEXT("Activate Ability %d"), AbilityIndex);
+	ServerActivateAbility(AbilityIndex);
+}
+
+
+void ABaseCharacter::ServerActivateAbility_Implementation(int AbilityIndex) {
 	if (validate(ActiveAbilities.Num() >= AbilityIndex) == false) { return; }
 	TSubclassOf<UGameplayAbility> Ability = ActiveAbilities[AbilityIndex];
 	if (validate(Ability != nullptr) == false) { return; }
-	GetAbilitySystemComponent()->TryActivateAbilityByClass(Ability);
+	if (ActiveAbilitiesCooldownMap.Contains(Ability) && ActiveAbilitiesCooldownMap[Ability] == false) {
+		ActiveAbilitiesCooldownMap[Ability] = true;
+
+		UActiveGameplayAbility* ActiveGameplayAbility = Cast<UActiveGameplayAbility>(Ability.GetDefaultObject());
+		if (validate(IsValid(ActiveGameplayAbility)) == false) { return; }
+		float CooldownDuration = ActiveGameplayAbility->GetCooldownDuration();
+
+		UWorld* World = GetWorld();
+
+		if (validate(IsValid(World)) == false) { return; }
+		FTimerManager& TimerManager = World->GetTimerManager();
+		FTimerHandle Handle;
+		FTimerDelegate CooldownDelegate;
+		CooldownDelegate.BindUFunction(this, FName("ClearCooldown"), Ability);
+		TimerManager.SetTimer(
+			Handle,
+			CooldownDelegate,
+			CooldownDuration,
+			false
+		);
+
+		GetAbilitySystemComponent()->TryActivateAbilityByClass(Ability);
+	}
 }
+
+
+void ABaseCharacter::ClearCooldown(TSubclassOf<UActiveGameplayAbility> Ability) {
+	ActiveAbilitiesCooldownMap[Ability] = false;
+}
+
 
 UBehaviorTree* ABaseCharacter::GetAIBehaviorTreeForCurrentGamemode() {
 	return BehaviourTree;
@@ -387,12 +426,22 @@ void ABaseCharacter::PossessedBy(AController* NewController) {
 	if (IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		for (TSubclassOf<UCustomGameplayAbility> Ability : Abilities) {
+			AcquireAbility(Ability);
+		}
 	}
 
 	// ASC MixedMode replication requires that the ASC Owner's Owner be the Controller.
 	SetOwner(NewController);
 }
 
+
+
+void ABaseCharacter::UnPossessed() {
+	Super::UnPossessed();
+
+	Destroy();
+}
 
 void ABaseCharacter::SetupEquippedWeapon() {
 	AWeapon* NewWeapon = GetEquippedWeapon();

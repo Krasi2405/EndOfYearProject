@@ -56,13 +56,22 @@ protected:
 	// Only called on server.
 	virtual void OnPossess(class APawn* Pawn) override;
 
-	virtual void OnUnPossess() override;
-
 	virtual void SetupInputComponent() override;
 
 
 	UFUNCTION()
 	void ServerHandleDeath();
+
+	UFUNCTION()
+	void ClientHandleDeath();
+
+
+	UPROPERTY(EditDefaultsOnly)
+	int RespawnDelay = 5;
+
+	FTimerHandle RespawnTimerHandle;
+
+	void Respawn();
 
 	UPROPERTY()
 	AHeroSpawner* TeamSpawner;

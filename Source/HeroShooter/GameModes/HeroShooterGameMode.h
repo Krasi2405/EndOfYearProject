@@ -47,6 +47,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	bool bSpawnBots = false;
 
+	UFUNCTION(Exec)
+	void EnableBots(bool bEnableBots) { bSpawnBots = bEnableBots; }
+
 	virtual void BeginPlay() override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;

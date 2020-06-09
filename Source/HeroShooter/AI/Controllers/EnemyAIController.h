@@ -14,6 +14,7 @@ class ACoverPoint;
 class UCrowdFollowingComponent;
 class UDataTable;
 class AHeroSpawner;
+class AHeroPlayerState;
 /**
  * 
  */
@@ -32,15 +33,34 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
+	
+	UFUNCTION()
+	void OnTeamChange(AHeroPlayerState* HeroPlayerState);
+
+	void SetupAI();
 
 	virtual void OnPossess(class APawn* Pawn) override;
 
 	virtual void Destroyed() override;
+
+	UFUNCTION()
+	void ServerHandleDeath();
 
 	UPROPERTY(EditDefaultsOnly)
 	UDataTable* HeroListTable;
 
 	UPROPERTY()
 	AHeroSpawner* HeroSpawner;
+
+
+	UPROPERTY(EditDefaultsOnly)
+	int RespawnDelay = 5;
+
+	FTimerHandle RespawnTimerHandle;
+
+	UFUNCTION()
+	void Respawn();
+
+	void SpawnPawn();
 
 };

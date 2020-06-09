@@ -53,6 +53,11 @@ public:
 	UFUNCTION(Exec)
 	void PrintLocalUniqueID();
 
+	FCustomServerSettings GetCustomServerSettings() {
+		if (CurrentServerSettings.IsSet() == false) { return FCustomServerSettings();  }
+		return CurrentServerSettings.GetValue();
+	}
+
 	FString GetPlayerUsername(APlayerState* PlayerState);
 
 protected:

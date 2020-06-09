@@ -62,7 +62,6 @@ void AProjectile::OnOverlapBegin(
 
 			AHeroPlayerState* OtherHeroPlayerState = OtherController->GetPlayerState<AHeroPlayerState>();
 			if (validate(IsValid(OtherHeroPlayerState)) == false) { return; }
-			UE_LOG(LogTemp, Warning, TEXT("Collide with player state which has team index of %d"), OtherHeroPlayerState->GetTeamIndex())
 			if (OtherHeroPlayerState->GetTeamIndex() == TeamIndex) { return; }
 		}
 

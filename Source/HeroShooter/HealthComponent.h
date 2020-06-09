@@ -65,6 +65,7 @@ protected:
 
 	void ClearLastDamagedBy();
 
+
 	UPROPERTY(EditDefaultsOnly)
 	float LastDamagedByExpireTime = 5.0f;
 
